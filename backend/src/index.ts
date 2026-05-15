@@ -1,5 +1,8 @@
 ﻿export interface Env {
   DB: D1Database;
+  AUTH_USERNAME: string;
+  AUTH_PASSWORD: string;
+  AUTH_TOKEN: string;
 }
 
 const corsHeaders = {
@@ -30,6 +33,13 @@ async function readJson(request: Request) {
   }
 }
 
+function isAuthorized(request: Request, env: Env) {
+  const authHeader = request.headers.get("Authorization") || "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+
+  return Boolean(env.AUTH_TOKEN && token === env.AUTH_TOKEN);
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (request.method === "OPTIONS") {
@@ -49,6 +59,41 @@ export default {
 
     if (path === "/api/health") {
       return json({ success: true, status: "ok" });
+    }
+
+    if (path === "/api/auth/login" && request.method === "POST") {
+      const body: any = await readJson(request);
+
+      if (!body || !body.username || !body.password) {
+        return json({
+          success: false,
+          message: "Username and password are required",
+        }, 400);
+      }
+
+      if (body.username === env.AUTH_USERNAME && body.password === env.AUTH_PASSWORD) {
+        return json({
+          success: true,
+          message: "Login successful",
+          token: env.AUTH_TOKEN,
+          user: {
+            name: "System Admin",
+            role: "Administrator",
+          },
+        });
+      }
+
+      return json({
+        success: false,
+        message: "Invalid username or password",
+      }, 401);
+    }
+
+    if (!isAuthorized(request, env)) {
+      return json({
+        success: false,
+        message: "Unauthorized. Please login first.",
+      }, 401);
     }
 
     if (path === "/api/sites" && request.method === "GET") {
@@ -263,5 +308,6 @@ export default {
     return notFound();
   },
 } satisfies ExportedHandler<Env>;
+
 
 

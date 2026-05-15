@@ -2,6 +2,19 @@
 import "./App.css";
 
 const API_BASE = "https://tmmd-srp-traceability-api.shamas-tmmd-srp.workers.dev";
+const AUTH_STORAGE_KEY = "tmmd_srp_auth";
+
+function getInitialAuth() {
+  try {
+    return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function createAuthHeaders(token) {
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 const navItems = [
   { id: "dashboard", label: "Dashboard", icon: "⌂" },
@@ -45,6 +58,8 @@ function daysUntilExpiry(asset) {
 function getCurrentSiteName(asset, sites) {
   if (asset?.current_site_name) return asset.current_site_name;
   if (asset?.site_name) return asset.site_name;
+  if (asset?.current_location) return asset.current_location;
+  if (asset?.current_site) return asset.current_site;
   if (asset?.location) return asset.location;
   const currentSiteId = asset?.current_site_id ?? asset?.site_id;
   const site = sites.find((item) => String(pickId(item)) === String(currentSiteId));
@@ -82,6 +97,10 @@ function App() {
   const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [apiStatus, setApiStatus] = useState("Checking");
+  const [auth, setAuth] = useState(getInitialAuth);
+  const [loginForm, setLoginForm] = useState({ username: "", password: "" });
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedAssetId, setSelectedAssetId] = useState("");
   const [destinationSiteId, setDestinationSiteId] = useState("");
@@ -94,13 +113,25 @@ function App() {
   const [traceLoading, setTraceLoading] = useState(false);
 
   async function loadData() {
+    if (!auth?.token) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
+
     try {
+      const authHeaders = createAuthHeaders(auth.token);
+
       const [healthRes, assetsRes, sitesRes] = await Promise.all([
         fetch(`${API_BASE}/api/health`),
-        fetch(`${API_BASE}/api/assets`),
-        fetch(`${API_BASE}/api/sites`),
+        fetch(`${API_BASE}/api/assets`, { headers: authHeaders }),
+        fetch(`${API_BASE}/api/sites`, { headers: authHeaders }),
       ]);
+
+      if (assetsRes.status === 401 || sitesRes.status === 401) {
+        throw new Error("Unauthorized");
+      }
 
       setApiStatus(healthRes.ok ? "Live" : "Issue");
 
@@ -112,14 +143,64 @@ function App() {
     } catch (error) {
       console.error(error);
       setApiStatus("Offline");
+
+      if (error.message === "Unauthorized") {
+        handleLogout();
+      }
     } finally {
       setLoading(false);
     }
   }
 
+  async function handleLogin(e) {
+    e.preventDefault();
+    setLoginError("");
+    setLoginLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(loginForm),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || !result?.token) {
+        throw new Error(result?.message || "Login failed");
+      }
+
+      const nextAuth = {
+        token: result.token,
+        user: result.user || { name: "System Admin", role: "Administrator" },
+      };
+
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextAuth));
+      setAuth(nextAuth);
+      setLoginForm({ username: "", password: "" });
+    } catch (error) {
+      console.error(error);
+      setLoginError(error.message || "Invalid username or password");
+    } finally {
+      setLoginLoading(false);
+    }
+  }
+
+  function handleLogout() {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    setAuth(null);
+    setAssets([]);
+    setSites([]);
+    setActiveTab("dashboard");
+  }
+
   useEffect(() => {
-    loadData();
-  }, []);
+    if (auth?.token) {
+      loadData();
+    } else {
+      setLoading(false);
+    }
+  }, [auth?.token]);
 
   const selectedAsset = useMemo(() => {
     return assets.find((asset) => String(pickId(asset)) === String(selectedAssetId));
@@ -179,6 +260,7 @@ function App() {
 
   async function saveMovement(e) {
     e.preventDefault();
+
     if (!selectedAssetId || !destinationSiteId) {
       setMovementMessage("Please select asset and destination site.");
       return;
@@ -190,19 +272,31 @@ function App() {
     try {
       const response = await fetch(`${API_BASE}/api/movements`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...createAuthHeaders(auth?.token),
+        },
         body: JSON.stringify({
           asset_id: selectedAssetId,
           to_site_id: destinationSiteId,
-          notes: movementNote,
-          moved_by: "Admin Demo User",
+          movement_datetime: new Date().toISOString(),
+          movement_type: "TRANSFER",
+          remarks: movementNote || null,
+          handed_over_by: "System Admin",
+          received_by: "Destination Receiver",
+          updated_by_user_id: null,
         }),
       });
 
       const result = await response.json().catch(() => ({}));
 
+      if (response.status === 401) {
+        handleLogout();
+        throw new Error("Session expired. Please login again.");
+      }
+
       if (!response.ok) {
-        throw new Error(result?.error || "Movement save failed");
+        throw new Error(result?.message || result?.error || "Movement save failed");
       }
 
       setMovementMessage("Movement saved successfully. Current location updated.");
@@ -221,14 +315,24 @@ function App() {
     e?.preventDefault();
     const term = traceQuery.trim();
 
-    if (!term) return;
+    if (!term || !auth?.token) return;
 
     setTraceLoading(true);
     setTraceAsset(null);
     setTraceHistory([]);
 
     try {
-      const searchRes = await fetch(`${API_BASE}/api/assets/search?q=${encodeURIComponent(term)}`);
+      const authHeaders = createAuthHeaders(auth.token);
+
+      const searchRes = await fetch(`${API_BASE}/api/assets/search?q=${encodeURIComponent(term)}`, {
+        headers: authHeaders,
+      });
+
+      if (searchRes.status === 401) {
+        handleLogout();
+        return;
+      }
+
       const searchJson = await searchRes.json();
       const results = normalizeList(searchJson, "assets");
       const asset = results[0];
@@ -241,9 +345,18 @@ function App() {
       setTraceAsset(asset);
 
       const assetId = pickId(asset);
-      const historyRes = await fetch(`${API_BASE}/api/assets/${assetId}/history`);
+      const historyRes = await fetch(`${API_BASE}/api/assets/${assetId}/history`, {
+        headers: authHeaders,
+      });
+
+      if (historyRes.status === 401) {
+        handleLogout();
+        return;
+      }
+
       const historyJson = await historyRes.json();
-      setTraceHistory(normalizeList(historyJson, "history"));
+      setTraceAsset(historyJson?.data?.asset || asset);
+      setTraceHistory(historyJson?.data?.movements || normalizeList(historyJson, "history"));
     } catch (error) {
       console.error(error);
     } finally {
@@ -251,54 +364,18 @@ function App() {
     }
   }
 
-  function exportAssetsCsv() {
-    const rows = [
-      ["Equipment", "Identification No.", "Current Location", "Days Until Expiry", "Status"],
-      ...assets.map((asset) => {
-        const days = daysUntilExpiry(asset);
-        const status = statusFromDays(days).label;
-
-        return [
-          getAssetName(asset),
-          getAssetSerial(asset),
-          getCurrentSiteName(asset, sites),
-          days === null ? "N/A" : days,
-          status,
-        ];
-      }),
-    ];
-
-    downloadCsv("tmmd-srp-asset-master.csv", rows);
+  if (!auth?.token) {
+    return (
+      <LoginScreen
+        loginForm={loginForm}
+        setLoginForm={setLoginForm}
+        loginError={loginError}
+        loginLoading={loginLoading}
+        onLogin={handleLogin}
+      />
+    );
   }
 
-  function exportExpiryCsv() {
-    const rows = [
-      ["Equipment", "Identification No.", "Current Location", "Days Until Expiry", "Status"],
-      ...dashboardData.expirySorted.map((asset) => {
-        const days = daysUntilExpiry(asset);
-        const status = statusFromDays(days).label;
-
-        return [
-          getAssetName(asset),
-          getAssetSerial(asset),
-          getCurrentSiteName(asset, sites),
-          days === null ? "N/A" : days,
-          status,
-        ];
-      }),
-    ];
-
-    downloadCsv("tmmd-srp-expiry-report.csv", rows);
-  }
-
-  function exportLocationCsv() {
-    const rows = [
-      ["Location", "Total Assets"],
-      ...dashboardData.distribution.map((item) => [item.site, item.total]),
-    ];
-
-    downloadCsv("tmmd-srp-location-summary.csv", rows);
-  }
   return (
     <div className="appShell">
       <aside className="sidebar">
@@ -341,6 +418,7 @@ function App() {
 
           <div className="topActions">
             <button className="ghostButton" onClick={loadData}>Refresh Data</button>
+            <button className="ghostButton" onClick={handleLogout}>Logout</button>
             <button className="primaryButton" onClick={() => setActiveTab("movement")}>New Movement</button>
           </div>
         </header>
@@ -692,6 +770,99 @@ function App() {
   );
 }
 
+function LoginScreen({ loginForm, setLoginForm, loginError, loginLoading, onLogin }) {
+  return (
+    <div className="loginPage">
+      <div className="loginGlow loginGlowOne" />
+      <div className="loginGlow loginGlowTwo" />
+
+      <div className="loginShell">
+        <section className="loginVisual">
+          <div className="loginVisualInner">
+            <p className="eyebrow">Enterprise Access Portal</p>
+            <h1>Secure Traceability Portal</h1>
+            <p className="loginLead">
+              Securely access executive dashboards, movement control, traceability history,
+              asset registers, and downloadable operational reports from one command center.
+            </p>
+
+            <div className="loginHighlights">
+              <div className="loginHighlightCard">
+                <strong>Authorized Access</strong>
+                <span>Access is restricted to approved users only.</span>
+              </div>
+
+              <div className="loginHighlightCard">
+                <strong>Protected Dashboard</strong>
+                <span>Dashboard and reports are available after successful login.</span>
+              </div>
+
+              <div className="loginHighlightCard">
+                <strong>Audit Ready System</strong>
+                <span>Operational records remain behind secure authentication.</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="loginCardWrap">
+          <div className="loginCard">
+            <div className="loginBrand">
+              <div className="brandMark">T</div>
+              <div>
+                <h1>TMMD & SRP</h1>
+                <p>Management & Traceability System</p>
+              </div>
+            </div>
+
+            <div className="loginHeader">
+              <p className="eyebrow">Secure Access</p>
+              <h2>Login to Command Center</h2>
+              <p>
+                Enter your authorized credentials to access dashboard, reports,
+                movements, and traceability records.
+              </p>
+            </div>
+
+            <form className="loginForm" onSubmit={onLogin}>
+              <label>
+                Username
+                <input
+                  value={loginForm.username}
+                  onChange={(e) => setLoginForm((prev) => ({ ...prev, username: e.target.value }))}
+                  placeholder="Enter username"
+                  autoComplete="username"
+                />
+              </label>
+
+              <label>
+                Password
+                <input
+                  type="password"
+                  value={loginForm.password}
+                  onChange={(e) => setLoginForm((prev) => ({ ...prev, password: e.target.value }))}
+                  placeholder="Enter password"
+                  autoComplete="current-password"
+                />
+              </label>
+
+              {loginError && <div className="loginError">{loginError}</div>}
+
+              <button className="primaryButton wide" disabled={loginLoading}>
+                {loginLoading ? "Signing in..." : "Login"}
+              </button>
+            </form>
+
+            <div className="loginFooterNote">
+              Authorized personnel only • Secure operational access
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
 function Kpi({ title, value, note, tone = "" }) {
   return (
     <div className={`kpiCard ${tone}`}>
@@ -783,6 +954,11 @@ function PlaceholderPage({ title, subtitle, cards }) {
 }
 
 export default App;
+
+
+
+
+
 
 
 
