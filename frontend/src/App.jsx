@@ -58,6 +58,24 @@ function statusFromDays(days) {
   return { label: "Valid", className: "success" };
 }
 
+function csvSafe(value) {
+  const text = value === null || value === undefined ? "" : String(value);
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function downloadCsv(filename, rows) {
+  const csv = rows.map((row) => row.map(csvSafe).join(",")).join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
 function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [assets, setAssets] = useState([]);
@@ -233,6 +251,54 @@ function App() {
     }
   }
 
+  function exportAssetsCsv() {
+    const rows = [
+      ["Equipment", "Identification No.", "Current Location", "Days Until Expiry", "Status"],
+      ...assets.map((asset) => {
+        const days = daysUntilExpiry(asset);
+        const status = statusFromDays(days).label;
+
+        return [
+          getAssetName(asset),
+          getAssetSerial(asset),
+          getCurrentSiteName(asset, sites),
+          days === null ? "N/A" : days,
+          status,
+        ];
+      }),
+    ];
+
+    downloadCsv("tmmd-srp-asset-master.csv", rows);
+  }
+
+  function exportExpiryCsv() {
+    const rows = [
+      ["Equipment", "Identification No.", "Current Location", "Days Until Expiry", "Status"],
+      ...dashboardData.expirySorted.map((asset) => {
+        const days = daysUntilExpiry(asset);
+        const status = statusFromDays(days).label;
+
+        return [
+          getAssetName(asset),
+          getAssetSerial(asset),
+          getCurrentSiteName(asset, sites),
+          days === null ? "N/A" : days,
+          status,
+        ];
+      }),
+    ];
+
+    downloadCsv("tmmd-srp-expiry-report.csv", rows);
+  }
+
+  function exportLocationCsv() {
+    const rows = [
+      ["Location", "Total Assets"],
+      ...dashboardData.distribution.map((item) => [item.site, item.total]),
+    ];
+
+    downloadCsv("tmmd-srp-location-summary.csv", rows);
+  }
   return (
     <div className="appShell">
       <aside className="sidebar">
@@ -569,16 +635,55 @@ function App() {
         )}
 
         {activeTab === "reports" && (
-          <PlaceholderPage
-            title="Reports & Export Center"
-            subtitle="Client-ready reporting panel for monthly summary, traceability audit, and expiry visibility."
-            cards={[
-              "Monthly movement summary",
-              "Critical expiry report",
-              "Asset location report",
-              "Export PDF / Excel placeholder",
-            ]}
-          />
+          <section className="pageGrid">
+            <div className="dashboardIntro">
+              <div>
+                <p className="eyebrow">Export Center</p>
+                <h3>Reports & Download Center</h3>
+                <p>
+                  Download client-ready CSV reports for asset master, expiry visibility, and location summary.
+                </p>
+              </div>
+
+              <div className="summaryChips">
+                <div className="summaryChip">
+                  <span>Assets</span>
+                  <strong>{assets.length}</strong>
+                </div>
+                <div className="summaryChip">
+                  <span>Critical</span>
+                  <strong>{dashboardData.critical.length}</strong>
+                </div>
+                <div className="summaryChip">
+                  <span>Sites</span>
+                  <strong>{sites.length}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="reportGrid">
+              <div className="reportCard">
+                <span>01</span>
+                <h4>Asset Master Report</h4>
+                <p>Complete equipment list with identification number, current location, expiry days, and status.</p>
+                <button className="primaryButton" onClick={exportAssetsCsv}>Download CSV</button>
+              </div>
+
+              <div className="reportCard">
+                <span>02</span>
+                <h4>Expiry Visibility Report</h4>
+                <p>Sorted expiry report showing critical, warning, valid, and no-expiry equipment records.</p>
+                <button className="primaryButton" onClick={exportExpiryCsv}>Download CSV</button>
+              </div>
+
+              <div className="reportCard">
+                <span>03</span>
+                <h4>Location Summary Report</h4>
+                <p>Site-wise asset distribution summary for operational visibility and management review.</p>
+                <button className="primaryButton" onClick={exportLocationCsv}>Download CSV</button>
+              </div>
+            </div>
+          </section>
         )}
 
         {loading && <div className="loadingOverlay">Loading live data...</div>}
@@ -678,3 +783,6 @@ function PlaceholderPage({ title, subtitle, cards }) {
 }
 
 export default App;
+
+
+

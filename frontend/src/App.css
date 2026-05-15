@@ -1216,3 +1216,52 @@ tbody tr:hover {
 .sidebar {
   box-shadow: 18px 0 40px rgba(15, 23, 42, 0.08);
 }
+
+/* Reports export cards */
+.reportGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.reportCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  border-radius: 13px;
+  padding: 16px;
+}
+
+.reportCard span {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 850;
+  margin-bottom: 12px;
+}
+
+.reportCard h4 {
+  margin: 0;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 820;
+  letter-spacing: -0.02em;
+}
+
+.reportCard p {
+  margin: 8px 0 14px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .reportGrid {
+    grid-template-columns: 1fr;
+  }
+}
