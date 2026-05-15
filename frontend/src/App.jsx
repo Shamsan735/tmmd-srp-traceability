@@ -17,13 +17,13 @@ function createAuthHeaders(token) {
 }
 
 const navItems = [
-  { id: "dashboard", label: "Dashboard", icon: "⌂" },
-  { id: "movement", label: "Movement Entry", icon: "⇄" },
-  { id: "traceability", label: "Traceability", icon: "◎" },
-  { id: "assets", label: "Asset Master", icon: "▦" },
-  { id: "calibration", label: "Calibration", icon: "◷" },
-  { id: "pm", label: "PM / Checklist", icon: "☑" },
-  { id: "reports", label: "Reports", icon: "↧" },
+  { id: "dashboard", label: "Dashboard", icon: "D" },
+  { id: "movement", label: "Movement Entry", icon: "M" },
+  { id: "traceability", label: "Traceability", icon: "T" },
+  { id: "assets", label: "Asset Master", icon: "A" },
+  { id: "calibration", label: "Calibration", icon: "C" },
+  { id: "pm", label: "PM / Checklist", icon: "P" },
+  { id: "reports", label: "Reports", icon: "R" },
 ];
 
 function normalizeList(payload, key) {
@@ -378,33 +378,81 @@ function App() {
 
   return (
     <div className="appShell">
-      <aside className="sidebar">
-        <div className="brandBlock">
-          <div className="brandMark">T</div>
-          <div>
-            <h1>TMMD & SRP</h1>
-            <p>Traceability Command</p>
+      <aside className="sidebar premiumSidebar">
+        <div className="sidebarTopGlow" />
+
+        <div className="brandBlock premiumBrand">
+          <div className="brandMonogram">
+            <span>TC</span>
+          </div>
+
+          <div className="brandCopy">
+            <span>TMMD & SRP</span>
+            <h1>TraceControl</h1>
+            <p>Enterprise Asset Suite</p>
           </div>
         </div>
 
-        <nav className="navList">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              className={`navButton ${activeTab === item.id ? "active" : ""}`}
-              onClick={() => setActiveTab(item.id)}
-            >
-              <span>{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
+        <div className="sidebarStatusStrip">
+          <span className={`syncOrb ${apiStatus.toLowerCase()}`} />
+          <div>
+            <strong>{apiStatus === "Live" ? "Cloud Sync Active" : `Cloud ${apiStatus}`}</strong>
+            <p>Protected operational workspace</p>
+          </div>
+        </div>
+
+        <nav className="navList premiumNav">
+          <div className="navSectionLabel">Command</div>
+          {navItems
+            .filter((item) => ["dashboard", "traceability"].includes(item.id))
+            .map((item) => (
+              <button
+                key={item.id}
+                className={`navButton ${activeTab === item.id ? "active" : ""}`}
+                onClick={() => setActiveTab(item.id)}
+              >
+                <i className="navActiveRail" />
+                <span>{item.icon}</span>
+                <em>{item.label}</em>
+              </button>
+            ))}
+
+          <div className="navSectionLabel">Operations</div>
+          {navItems
+            .filter((item) => ["movement", "assets", "reports"].includes(item.id))
+            .map((item) => (
+              <button
+                key={item.id}
+                className={`navButton ${activeTab === item.id ? "active" : ""}`}
+                onClick={() => setActiveTab(item.id)}
+              >
+                <i className="navActiveRail" />
+                <span>{item.icon}</span>
+                <em>{item.label}</em>
+              </button>
+            ))}
+
+          <div className="navSectionLabel">Control Modules</div>
+          {navItems
+            .filter((item) => ["calibration", "pm"].includes(item.id))
+            .map((item) => (
+              <button
+                key={item.id}
+                className={`navButton ${activeTab === item.id ? "active" : ""}`}
+                onClick={() => setActiveTab(item.id)}
+              >
+                <i className="navActiveRail" />
+                <span>{item.icon}</span>
+                <em>{item.label}</em>
+              </button>
+            ))}
         </nav>
 
-        <div className="sidebarFooter">
-          <span className={`pulse ${apiStatus.toLowerCase()}`} />
+        <div className="sidebarFooter premiumFooter">
+          <div className="footerAvatar">A</div>
           <div>
-            <strong>Backend {apiStatus}</strong>
-            <small>Cloudflare Worker + D1</small>
+            <strong>Admin Access</strong>
+            <small>Secure session active</small>
           </div>
         </div>
       </aside>
@@ -412,8 +460,8 @@ function App() {
       <main className="mainArea">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Client Demo Portal</p>
-            <h2>{navItems.find((item) => item.id === activeTab)?.label}</h2>
+            <p className="eyebrow">Enterprise Operations Suite</p>
+            <h2>{activeTab === "dashboard" ? "Command Dashboard" : navItems.find((item) => item.id === activeTab)?.label}</h2>
           </div>
 
           <div className="topActions">
@@ -424,73 +472,139 @@ function App() {
         </header>
 
         {activeTab === "dashboard" && (
-          <section className="pageGrid">
-            <div className="dashboardIntro">
+          <section className="dashboardV2">
+            <div className="v2Hero">
               <div>
-                <p className="eyebrow">Executive Overview</p>
-                <h3>TMMD & SRP Asset Visibility Dashboard</h3>
+                <p className="eyebrow">Asset Control Tower</p>
+                <h3>Live Movement • Expiry Risk • Traceability Intelligence</h3>
                 <p>
-                  Compact operational overview for asset location, expiry attention, and traceability status.
+                  Centralized operational visibility for asset location, expiry attention,
+                  movement control, and audit-ready traceability.
                 </p>
+
+                <div className="v2HeroActions">
+                  <button className="primaryButton" onClick={() => setActiveTab("movement")}>Register Movement</button>
+                  <button className="ghostButton" onClick={() => setActiveTab("traceability")}>Trace Asset</button>
+                  <button className="ghostButton" onClick={() => setActiveTab("reports")}>Export Reports</button>
+                </div>
               </div>
 
-              <div className="summaryChips">
-                <div className="summaryChip">
-                  <span>Database</span>
-                  <strong>Live</strong>
+              <div className="v2SyncCard">
+                <div className="v2SyncTop">
+                  <span className="v2LivePulse" />
+                  <small>Cloud Sync</small>
                 </div>
-                <div className="summaryChip">
-                  <span>Assets</span>
-                  <strong>{assets.length}</strong>
-                </div>
-                <div className="summaryChip">
-                  <span>Sites</span>
-                  <strong>{sites.length}</strong>
+                <strong>{apiStatus}</strong>
+                <p>Secure live workspace with protected access and real-time operational monitoring.</p>
+                <div className="v2SyncPills">
+                  <span>Live Monitoring</span>
+                  <span>Secure Access</span>
                 </div>
               </div>
             </div>
 
-            <div className="kpiGrid">
-              <Kpi title="Total Assets" value={assets.length} note="Tracked equipment register" />
-              <Kpi title="Critical Expiry" value={dashboardData.critical.length} note="Immediate attention needed" tone="danger" />
-              <Kpi title="Warning Expiry" value={dashboardData.warning.length} note="Upcoming expiry attention" tone="warning" />
-              <Kpi title="Active Sites" value={sites.length} note="Current deployed locations" tone="success" />
+            <div className="v2KpiGrid">
+              <div className="v2KpiCard">
+                <div className="v2KpiHead"><span>Total Assets</span><b>01</b></div>
+                <strong>{assets.length}</strong>
+                <p>Tracked equipment register</p>
+                <div className="v2MiniTrend"><i style={{height:"28%"}}/><i style={{height:"48%"}}/><i style={{height:"38%"}}/><i style={{height:"72%"}}/><i style={{height:"62%"}}/><i style={{height:"86%"}}/></div>
+              </div>
+
+              <div className="v2KpiCard danger">
+                <div className="v2KpiHead"><span>Critical Expiry</span><b>02</b></div>
+                <strong>{dashboardData.critical.length}</strong>
+                <p>Immediate action required</p>
+                <div className="v2RiskLine danger" />
+              </div>
+
+              <div className="v2KpiCard warning">
+                <div className="v2KpiHead"><span>Warning Expiry</span><b>03</b></div>
+                <strong>{dashboardData.warning.length}</strong>
+                <p>Upcoming attention</p>
+                <div className="v2RiskLine warning" />
+              </div>
+
+              <div className="v2KpiCard success">
+                <div className="v2KpiHead"><span>Active Sites</span><b>04</b></div>
+                <strong>{sites.length}</strong>
+                <p>Operational locations</p>
+                <div className="v2RiskLine success" />
+              </div>
             </div>
 
-            <div className="twoColumn">
-              <Panel title="Critical Expiry Watchlist" action={`${dashboardData.expirySorted.slice(0, 6).length} items`}>
-                <div className="watchList">
-                  {dashboardData.expirySorted.slice(0, 6).map((asset) => {
-                    const days = daysUntilExpiry(asset);
-                    const status = statusFromDays(days);
-                    return (
-                      <div className="watchItem" key={pickId(asset)}>
-                        <div>
-                          <strong>{getAssetName(asset)}</strong>
-                          <span>{getAssetSerial(asset)} • {getCurrentSiteName(asset, sites)}</span>
-                        </div>
-                        <span className={`badge ${status.className}`}>
-                          {days === null ? "N/A" : `${days} days`}
-                        </span>
-                      </div>
-                    );
-                  })}
-                  {!dashboardData.expirySorted.length && <Empty text="No expiry data available." />}
+            <div className="v2MainGrid">
+              <Panel title="Asset Health Intelligence" action="Risk score">
+                <div className="v2HealthWrap">
+                  <div
+                    className="v2HealthRing"
+                    style={{
+                      "--validEnd": `${assets.length ? (dashboardData.valid.length / assets.length) * 100 : 0}%`,
+                      "--warningEnd": `${assets.length ? ((dashboardData.valid.length + dashboardData.warning.length) / assets.length) * 100 : 0}%`,
+                      "--criticalEnd": `${assets.length ? ((dashboardData.valid.length + dashboardData.warning.length + dashboardData.critical.length) / assets.length) * 100 : 0}%`,
+                    }}
+                  >
+                    <div>
+                      <strong>{assets.length ? Math.round((dashboardData.valid.length / assets.length) * 100) : 0}%</strong>
+                      <span>Healthy</span>
+                    </div>
+                  </div>
+
+                  <div className="v2HealthMetrics">
+                    <div><span className="v2Dot success" /><p>Valid Assets</p><strong>{dashboardData.valid.length}</strong></div>
+                    <div><span className="v2Dot warning" /><p>Warning Assets</p><strong>{dashboardData.warning.length}</strong></div>
+                    <div><span className="v2Dot danger" /><p>Critical Assets</p><strong>{dashboardData.critical.length}</strong></div>
+                  </div>
                 </div>
               </Panel>
 
-              <Panel title="Location Distribution" action={`${dashboardData.distribution.length} locations`}>
-                <div className="barList">
-                  {dashboardData.distribution.slice(0, 6).map((item) => {
-                    const width = assets.length ? Math.max(10, (item.total / assets.length) * 100) : 0;
+              <Panel title="Critical Action Center" action="Priority view">
+                <div className="v2ActionCenter">
+                  <div className="v2ActionAlert danger">
+                    <span>Immediate Attention</span>
+                    <strong>{dashboardData.critical.length}</strong>
+                    <p>asset(s) in critical expiry range</p>
+                  </div>
+                  <div className="v2ActionAlert warning">
+                    <span>Upcoming Attention</span>
+                    <strong>{dashboardData.warning.length}</strong>
+                    <p>asset(s) approaching expiry</p>
+                  </div>
+                  <div className="v2ActionAlert success">
+                    <span>Operational Coverage</span>
+                    <strong>{sites.length}</strong>
+                    <p>active location(s) monitored</p>
+                  </div>
+                </div>
+              </Panel>
+
+              <Panel title="Quick Trace Search" action="Asset lookup">
+                <div className="v2TraceCard">
+                  <p>Search equipment by identification number and open movement history.</p>
+                  <input
+                    className="searchInput"
+                    value={traceQuery}
+                    onChange={(e) => setTraceQuery(e.target.value)}
+                    placeholder="Enter identification number..."
+                  />
+                  <button className="primaryButton wide" onClick={() => setActiveTab("traceability")}>
+                    Open Traceability
+                  </button>
+                </div>
+              </Panel>
+            </div>
+
+            <div className="v2SecondGrid">
+              <Panel title="Site Distribution Board" action={`${dashboardData.distribution.length} locations`}>
+                <div className="v2SiteBoard">
+                  {dashboardData.distribution.slice(0, 7).map((item, index) => {
+                    const width = assets.length ? Math.max(8, (item.total / assets.length) * 100) : 0;
                     return (
-                      <div className="barItem" key={item.site}>
-                        <div>
-                          <span>{item.site}</span>
-                          <strong>{item.total}</strong>
-                        </div>
-                        <div className="barTrack">
-                          <div className="barFill" style={{ width: `${width}%` }} />
+                      <div className="v2SiteRow" key={item.site}>
+                        <div className="v2SiteRank">{String(index + 1).padStart(2, "0")}</div>
+                        <div className="v2SiteInfo">
+                          <div><strong>{item.site}</strong><span>{item.total} asset(s)</span></div>
+                          <div className="barTrack"><div className="barFill" style={{ width: `${width}%` }} /></div>
                         </div>
                       </div>
                     );
@@ -498,54 +612,47 @@ function App() {
                   {!dashboardData.distribution.length && <Empty text="No location distribution available." />}
                 </div>
               </Panel>
+
+              <Panel title="Priority Expiry Watchlist" action={`${dashboardData.expirySorted.slice(0, 6).length} items`}>
+                <div className="v2WatchList">
+                  {dashboardData.expirySorted.slice(0, 6).map((asset) => {
+                    const days = daysUntilExpiry(asset);
+                    const status = statusFromDays(days);
+                    return (
+                      <div className="v2WatchItem" key={pickId(asset)}>
+                        <div className={`v2WatchIcon ${status.className}`}>
+                          {status.className === "danger" ? "!" : status.className === "warning" ? "W" : "OK"}
+                        </div>
+                        <div>
+                          <strong>{getAssetName(asset)}</strong>
+                          <span>{getAssetSerial(asset)} • {getCurrentSiteName(asset, sites)}</span>
+                        </div>
+                        <span className={`badge ${status.className}`}>{days === null ? "N/A" : `${days} days`}</span>
+                      </div>
+                    );
+                  })}
+                  {!dashboardData.expirySorted.length && <Empty text="No expiry data available." />}
+                </div>
+              </Panel>
             </div>
 
-            <div className="twoColumn">
-              <Panel title="Asset Register Snapshot" action={`${filteredAssets.slice(0, 6).length} shown`}>
+            <div className="v2BottomGrid">
+              <Panel title="Asset Register Snapshot" action={`${filteredAssets.slice(0, 5).length} shown`}>
                 <input
                   className="searchInput"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search asset, identification no., or location..."
                 />
-                <AssetTable assets={filteredAssets.slice(0, 6)} sites={sites} compact />
+                <AssetTable assets={filteredAssets.slice(0, 5)} sites={sites} compact />
               </Panel>
 
-              <Panel title="Operational Summary" action="Live status">
-                <div className="summaryGrid">
-                  <div className="summaryBox">
-                    <span>Critical</span>
-                    <strong>{dashboardData.critical.length}</strong>
-                    <small>0-7 days remaining</small>
-                  </div>
-                  <div className="summaryBox">
-                    <span>Warning</span>
-                    <strong>{dashboardData.warning.length}</strong>
-                    <small>8-15 days remaining</small>
-                  </div>
-                  <div className="summaryBox">
-                    <span>Valid</span>
-                    <strong>{dashboardData.valid.length}</strong>
-                    <small>15+ days remaining</small>
-                  </div>
-                  <div className="summaryBox">
-                    <span>Status</span>
-                    <strong>{apiStatus}</strong>
-                    <small>Backend connectivity</small>
-                  </div>
-                </div>
-
-                <div className="miniSection">
-                  <h4>Top Locations</h4>
-                  <div className="miniList">
-                    {dashboardData.distribution.slice(0, 5).map((item) => (
-                      <div className="miniListItem" key={item.site}>
-                        <span>{item.site}</span>
-                        <strong>{item.total}</strong>
-                      </div>
-                    ))}
-                    {!dashboardData.distribution.length && <Empty text="No location stats yet." />}
-                  </div>
+              <Panel title="Executive Quick Actions" action="Control panel">
+                <div className="v2QuickActions">
+                  <button onClick={() => setActiveTab("movement")}><strong>Register Movement</strong><span>Transfer asset and update current location</span></button>
+                  <button onClick={() => setActiveTab("traceability")}><strong>Trace Asset</strong><span>Open movement history and audit trail</span></button>
+                  <button onClick={() => setActiveTab("reports")}><strong>Download Reports</strong><span>Export asset, expiry, and location reports</span></button>
+                  <button onClick={() => setActiveTab("assets")}><strong>Asset Master</strong><span>Review complete asset register</span></button>
                 </div>
               </Panel>
             </div>
@@ -954,6 +1061,15 @@ function PlaceholderPage({ title, subtitle, cards }) {
 }
 
 export default App;
+
+
+
+
+
+
+
+
+
 
 
 
