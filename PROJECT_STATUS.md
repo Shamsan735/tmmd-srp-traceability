@@ -15,16 +15,23 @@
 - Expiry Visibility Report CSV
 - Location Summary Report CSV
 
+### v1.2-login-auth
+- Login/auth system added
+- Backend protected with Authorization token
+- Animated professional login page added
+- Logout button added
+- Live production URL protected
+
 ## Frontend
 
 Main Live URL:
 https://tmmd-srp-traceability.pages.dev
 
-Main Branch Alias:
-https://main.tmmd-srp-traceability.pages.dev
+Production Branch Used:
+production
 
-Latest Deployment Tested:
-https://86c3f0a1.tmmd-srp-traceability.pages.dev
+Latest production deployment was updated after deploying with:
+npx wrangler pages deploy dist --project-name tmmd-srp-traceability --branch production --commit-dirty=true
 
 ## Backend API
 
@@ -34,22 +41,44 @@ https://tmmd-srp-traceability-api.shamas-tmmd-srp.workers.dev
 Health Check:
 https://tmmd-srp-traceability-api.shamas-tmmd-srp.workers.dev/api/health
 
+Login Endpoint:
+POST /api/auth/login
+
+## Login/Auth Notes
+
+- Username/password are stored in Cloudflare Worker secrets.
+- AUTH_USERNAME, AUTH_PASSWORD, and AUTH_TOKEN are Worker secrets.
+- Do not commit real passwords or tokens into Git.
+- Before final client delivery, change AUTH_PASSWORD and AUTH_TOKEN from Cloudflare secrets.
+
 ## Completed
 
 - Backend Worker deployed
 - Cloudflare D1 database connected
-- Assets API working
-- Sites API working
-- Movement save working
+- Backend auth secrets added
+- Login API working
+- Protected API routes added
+- Assets API working with auth
+- Sites API working with auth
+- Movement save working with auth
 - Current location updates working
 - Sidebar tabs working
 - Executive dashboard redesigned
 - Reports CSV export added
-- Cloudflare Pages deployed
+- Animated login page added
+- Logout added
+- Cloudflare Pages production deployed
 - Git repo initialized
 - Stable versions committed and tagged
 
 ## Current Working Features
+
+### Login/Auth
+- Secure login page
+- Username/password verification via Worker secrets
+- Token stored in browser localStorage
+- Protected API calls
+- Logout clears session
 
 ### Dashboard
 - Executive overview
@@ -89,9 +118,14 @@ git checkout v1-executive-dashboard
 Rollback to report export version:
 git checkout v1.1-report-export
 
+Rollback to login/auth version:
+git checkout v1.2-login-auth
+
 ## Next Possible Work
 
-- Add login/auth
+- Change production password before client delivery
+- Add role-based users
+- Add user management page
 - Add PDF export option
 - Add Excel XLSX export option
 - Improve Calibration records UI
