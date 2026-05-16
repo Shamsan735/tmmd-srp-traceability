@@ -671,6 +671,41 @@ function App() {
     downloadCsv("calibration-report.csv", rows);
   }
 
+
+  async function exportAssetRepairCsv() {
+    const response = await fetch(`${API_BASE}/api/asset-repairs`, {
+      headers: createAuthHeaders(auth?.token),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok || result.success === false) {
+      alert(result.message || result.error || "Unable to export asset repair report.");
+      return;
+    }
+
+    const repairRecords = normalizeList(result, "asset_repairs");
+
+    const rows = [
+      ["Equipment Name", "Equipment Number", "Category", "Site", "Repair Date", "Fault / Issue", "Action Taken", "Repaired By", "Parts Used", "Status", "Attachment", "Remarks"],
+      ...repairRecords.map((record) => [
+        record?.equipment_name || "",
+        record?.serial_number || "",
+        record?.category || "",
+        record?.site_name || record?.site_code || "",
+        record?.repair_date || "",
+        record?.fault_description || "",
+        record?.action_taken || "",
+        record?.repaired_by || "",
+        record?.parts_used || "",
+        record?.status || "",
+        record?.attachment_ref || "",
+        record?.remarks || "",
+      ]),
+    ];
+
+    downloadCsv("asset-repair-history-report.csv", rows);
+  }
   function exportPmChecklistCsv() {
     const rows = [
       ["Equipment Name", "Equipment Number", "Category", "Site", "Checklist Type", "Inspection Date", "Inspector Name", "PM Frequency", "Result", "Attachment", "Remarks"],
@@ -1367,9 +1402,9 @@ function App() {
 
               <div className="reportCard">
                 <span>03</span>
-                <h4>Current Site Location Report</h4>
-                <p>Site-wise asset distribution summary for operational visibility and management review.</p>
-                <button className="primaryButton" onClick={exportLocationCsv}>Download CSV</button>
+                <h4>Asset Repair History Report</h4>
+                <p>Equipment-wise repair history with fault, action taken, repaired by, parts used, repair status, attachment, and remarks.</p>
+                <button className="primaryButton" onClick={exportAssetRepairCsv}>Download CSV</button>
               </div>
               <div className="reportCard">
                 <span>04</span>
@@ -3684,6 +3719,7 @@ function PlaceholderPage({ title, subtitle, cards }) {
 }
 
 export default App;
+
 
 
 
