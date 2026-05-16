@@ -33,11 +33,76 @@ async function readJson(request: Request) {
   }
 }
 
-function isAuthorized(request: Request, env: Env) {
+function getBearerToken(request: Request) {
   const authHeader = request.headers.get("Authorization") || "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  return authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+}
 
-  return Boolean(env.AUTH_TOKEN && token === env.AUTH_TOKEN);
+function isAuthorized(request: Request, env: Env) {
+  const token = getBearerToken(request);
+  return Boolean(env.AUTH_TOKEN && (token === env.AUTH_TOKEN || token.startsWith(env.AUTH_TOKEN + ":")));
+}
+
+function normalizeAccessRole(role: string | null | undefined) {
+  const value = String(role || "").trim().toLowerCase();
+
+  if (value === "admin" || value === "administrator") return "Admin";
+  if (value === "store" || value === "store user") return "Store";
+  if (value === "operator") return "Operator";
+  if (value === "viewer" || value === "viewer/auditor") return "Viewer";
+
+  return "Viewer";
+}
+
+function getRoleFromRequest(request: Request, env: Env) {
+  const token = getBearerToken(request);
+
+  if (!env.AUTH_TOKEN || !token) return null;
+  if (token === env.AUTH_TOKEN) return "Admin";
+
+  if (token.startsWith(env.AUTH_TOKEN + ":")) {
+    return normalizeAccessRole(token.slice(env.AUTH_TOKEN.length + 1));
+  }
+
+  return null;
+}
+
+function isRoleAccessAllowed(request: Request, env: Env) {
+  const role = getRoleFromRequest(request, env);
+  const method = request.method.toUpperCase();
+  const path = new URL(request.url).pathname;
+
+  if (!role) return false;
+  if (role === "Admin") return true;
+
+  const isRead = method === "GET";
+  const isAssetList = path === "/api/assets";
+  const isAssetSearch = path === "/api/assets/search";
+  const isAssetHistory = /^\/api\/assets\/\d+\/history$/.test(path);
+  const isSites = path === "/api/sites" || /^\/api\/sites\/\d+$/.test(path);
+  const isMovements = path === "/api/movements";
+  const isPm = path === "/api/checklist-records" || /^\/api\/checklist-records\/\d+$/.test(path);
+  const isRepair = path === "/api/asset-repairs" || /^\/api\/asset-repairs\/\d+$/.test(path);
+
+  if (role === "Viewer") {
+    return isRead && (isAssetList || isAssetSearch || isAssetHistory || path === "/api/sites" || isPm);
+  }
+
+  if (role === "Operator") {
+    if (isRead && (isAssetList || isAssetSearch || isAssetHistory || path === "/api/sites" || isPm)) return true;
+    if (method === "POST" && isMovements) return true;
+    if ((method === "POST" || method === "PUT") && isPm) return true;
+    return false;
+  }
+
+  if (role === "Store") {
+    if (isRead && (isAssetList || isAssetSearch || isAssetHistory || path === "/api/sites" || isPm || isRepair || isMovements)) return true;
+    if (method === "POST" && isMovements) return true;
+    if ((method === "POST" || method === "PUT") && isRepair) return true;
+    return false;
+  }
+
+  return false;
 }
 
 export default {
@@ -71,14 +136,23 @@ export default {
         }, 400);
       }
 
-      if (body.username === env.AUTH_USERNAME && body.password === env.AUTH_PASSWORD) {
+      const users = [
+        { username: env.AUTH_USERNAME, password: env.AUTH_PASSWORD, name: "System Admin", role: "Admin", token: env.AUTH_TOKEN },
+        { username: "store", password: "Store@123", name: "Store User", role: "Store", token: env.AUTH_TOKEN + ":Store" },
+        { username: "operator", password: "Operator@123", name: "Operator", role: "Operator", token: env.AUTH_TOKEN + ":Operator" },
+        { username: "viewer", password: "Viewer@123", name: "Viewer", role: "Viewer", token: env.AUTH_TOKEN + ":Viewer" },
+      ];
+
+      const user = users.find((item) => body.username === item.username && body.password === item.password);
+
+      if (user) {
         return json({
           success: true,
           message: "Login successful",
-          token: env.AUTH_TOKEN,
+          token: user.token,
           user: {
-            name: "System Admin",
-            role: "Administrator",
+            name: user.name,
+            role: user.role,
           },
         });
       }
@@ -94,6 +168,13 @@ export default {
         success: false,
         message: "Unauthorized. Please login first.",
       }, 401);
+    }
+
+    if (!isRoleAccessAllowed(request, env)) {
+      return json({
+        success: false,
+        message: "Access denied for this role.",
+      }, 403);
     }
 
     if (path === "/api/sites" && request.method === "GET") {

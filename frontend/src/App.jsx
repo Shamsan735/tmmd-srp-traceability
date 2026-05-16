@@ -31,6 +31,28 @@ const navItems = [
   { id: "reports", label: "Reports", icon: "R" },
 ];
 
+const ROLE_TAB_ACCESS = {
+  Admin: ["dashboard", "movement", "traceability", "assets", "sites", "calibration", "pm", "repair", "reports"],
+  Store: ["dashboard", "movement", "traceability", "sites", "repair", "reports"],
+  Operator: ["dashboard", "movement", "traceability", "pm"],
+  Viewer: ["dashboard", "traceability"],
+};
+
+function normalizeUserRole(role) {
+  const value = String(role || "").trim().toLowerCase();
+
+  if (value === "admin" || value === "administrator") return "Admin";
+  if (value === "store" || value === "store user") return "Store";
+  if (value === "operator") return "Operator";
+  if (value === "viewer" || value === "viewer/auditor") return "Viewer";
+
+  return "Viewer";
+}
+
+function getAllowedTabsForRole(role) {
+  return ROLE_TAB_ACCESS[normalizeUserRole(role)] || ROLE_TAB_ACCESS.Viewer;
+}
+
 function normalizeList(payload, key) {
   if (Array.isArray(payload)) return payload;
   if (payload?.[key] && Array.isArray(payload[key])) return payload[key];
@@ -286,6 +308,9 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [apiStatus, setApiStatus] = useState("Checking");
   const [auth, setAuth] = useState(getInitialAuth);
+  const userRole = normalizeUserRole(auth?.user?.role);
+  const allowedTabIds = useMemo(() => getAllowedTabsForRole(userRole), [userRole]);
+  const canAccessTab = (tabId) => allowedTabIds.includes(tabId);
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
@@ -915,7 +940,7 @@ function App() {
         <nav className="navList premiumNav">
           <div className="navSectionLabel">Command</div>
           {navItems
-            .filter((item) => ["dashboard", "traceability"].includes(item.id))
+            .filter((item) => ["dashboard", "traceability"].includes(item.id) && canAccessTab(item.id))
             .map((item) => (
               <button
                 key={item.id}
@@ -930,7 +955,7 @@ function App() {
 
           <div className="navSectionLabel">Operations</div>
           {navItems
-            .filter((item) => ["movement", "assets", "sites", "reports"].includes(item.id))
+            .filter((item) => ["movement", "assets", "sites", "reports"].includes(item.id) && canAccessTab(item.id))
             .map((item) => (
               <button
                 key={item.id}
@@ -945,7 +970,7 @@ function App() {
 
           <div className="navSectionLabel">Control Modules</div>
           {navItems
-            .filter((item) => ["calibration", "pm", "repair"].includes(item.id))
+            .filter((item) => ["calibration", "pm", "repair"].includes(item.id) && canAccessTab(item.id))
             .map((item) => (
               <button
                 key={item.id}
@@ -973,6 +998,7 @@ function App() {
           <div>
             <p className="eyebrow">Enterprise Operations Suite</p>
             <h2>{activeTab === "dashboard" ? "Command Dashboard" : navItems.find((item) => item.id === activeTab)?.label}</h2>
+            <p className="eyebrow">Access Role: {userRole}</p>
           </div>
 
           <div className="topActions">
