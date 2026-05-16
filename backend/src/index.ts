@@ -672,7 +672,7 @@ export default {
           pm_frequency,
           attachment_ref,
           remarks
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         body.asset_id,
         body.checklist_type,
@@ -847,7 +847,7 @@ export default {
           status,
           remarks,
           attachment_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         body.asset_id,
         siteId,
@@ -1137,6 +1137,7 @@ export default {
     return notFound();
   },
 } satisfies ExportedHandler<Env>;
+
 
 
 
