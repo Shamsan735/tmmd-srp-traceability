@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from "react";
+import * as XLSX from "xlsx-js-style";
 import "./App.css";
 
 const API_BASE = "https://tmmd-srp-traceability-api.shamas-tmmd-srp.workers.dev";
@@ -78,6 +79,124 @@ function statusFromDays(days) {
 function csvSafe(value) {
   const text = value === null || value === undefined ? "" : String(value);
   return `"${text.replace(/"/g, '""')}"`;
+}
+
+
+function xlsxDateStamp() {
+  return new Date().toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function daysBetweenToday(dateValue) {
+  if (!dateValue) return "";
+  const today = new Date();
+  const due = new Date(dateValue);
+  if (Number.isNaN(due.getTime())) return "";
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+  return Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function excelStatusStyle(statusText) {
+  const text = String(statusText || "").toLowerCase();
+
+  if (text.includes("due") || text.includes("fail")) {
+    return { fill: { fgColor: { rgb: "FF0000" } }, font: { color: { rgb: "FFFFFF" }, bold: true } };
+  }
+
+  if (text.includes("pending") || text.includes("attention") || text.includes("critical")) {
+    return { fill: { fgColor: { rgb: "FFC000" } }, font: { color: { rgb: "000000" }, bold: true } };
+  }
+
+  if (text.includes("ok") || text.includes("valid") || text.includes("pass") || text.includes("active")) {
+    return { fill: { fgColor: { rgb: "70AD47" } }, font: { color: { rgb: "FFFFFF" }, bold: true } };
+  }
+
+  return { fill: { fgColor: { rgb: "D9EAF7" } }, font: { color: { rgb: "000000" }, bold: true } };
+}
+
+function styleReportWorksheet(ws, rangeRef, headerRowNumber, statusColumnLetter) {
+  const border = {
+    top: { style: "thin", color: { rgb: "7F7F7F" } },
+    bottom: { style: "thin", color: { rgb: "7F7F7F" } },
+    left: { style: "thin", color: { rgb: "7F7F7F" } },
+    right: { style: "thin", color: { rgb: "7F7F7F" } },
+  };
+
+  const range = XLSX.utils.decode_range(rangeRef);
+
+  for (let row = range.s.r; row <= range.e.r; row++) {
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+      if (!ws[cellAddress]) continue;
+
+      ws[cellAddress].s = {
+        ...(ws[cellAddress].s || {}),
+        border,
+        alignment: { vertical: "center", horizontal: row === headerRowNumber - 1 ? "center" : "left", wrapText: true },
+        font: { name: "Calibri", sz: row === headerRowNumber - 1 ? 10 : 9, bold: row === headerRowNumber - 1 },
+      };
+    }
+  }
+
+  for (let col = range.s.c; col <= range.e.c; col++) {
+    const headerCell = XLSX.utils.encode_cell({ r: headerRowNumber - 1, c: col });
+    if (ws[headerCell]) {
+      ws[headerCell].s = {
+        ...(ws[headerCell].s || {}),
+        fill: { fgColor: { rgb: "B4C6E7" } },
+        font: { name: "Calibri", sz: 9, bold: true, color: { rgb: "000000" } },
+        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+        border,
+      };
+    }
+  }
+
+  if (statusColumnLetter) {
+    for (let row = headerRowNumber + 1; row <= range.e.r + 1; row++) {
+      const cellAddress = `${statusColumnLetter}${row}`;
+      if (ws[cellAddress]) {
+        ws[cellAddress].s = {
+          ...(ws[cellAddress].s || {}),
+          ...excelStatusStyle(ws[cellAddress].v),
+          alignment: { horizontal: "center", vertical: "center" },
+          border,
+        };
+      }
+    }
+  }
+
+  ws["!autofilter"] = { ref: rangeRef };
+}
+
+function downloadStyledWorkbook(filename, sheetName, rows, options = {}) {
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  ws["!merges"] = options.merges || [];
+  ws["!cols"] = options.cols || [];
+  ws["!rows"] = options.rows || [];
+
+  const rangeRef = XLSX.utils.encode_range({
+    s: { r: options.headerRow - 1, c: 0 },
+    e: { r: rows.length - 1, c: Math.max(...rows.map((row) => row.length)) - 1 },
+  });
+
+  styleReportWorksheet(ws, rangeRef, options.headerRow, options.statusColumn);
+
+  if (ws["A1"]) {
+    ws["A1"].s = {
+      font: { name: "Calibri", sz: 16, bold: true, color: { rgb: "000000" } },
+      alignment: { horizontal: "center", vertical: "center" },
+      fill: { fgColor: { rgb: "E2F0D9" } },
+    };
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  XLSX.writeFile(wb, filename);
 }
 
 function downloadCsv(filename, rows) {
@@ -319,6 +438,113 @@ function App() {
     return { critical, warning, valid, distribution, expirySorted };
   }, [assets, sites]);
 
+
+
+  function exportAssetsExcel() {
+    const rows = [
+      ["TMMD & SRP TraceControl - Asset Master Report"],
+      [`Generated: ${xlsxDateStamp()}`],
+      [],
+      ["Equipment Name", "Equipment Number", "Category", "Manufacturer", "Model", "Current Site", "Status", "Remarks"],
+      ...assets.map((asset) => [
+        getAssetName(asset),
+        getAssetSerial(asset),
+        asset?.category || "",
+        asset?.manufacturer || "",
+        asset?.model || "",
+        getCurrentSiteName(asset, sites),
+        asset?.status || "Active",
+        asset?.remarks || "",
+      ]),
+    ];
+
+    downloadStyledWorkbook("asset-master-report.xlsx", "Asset Master", rows, {
+      headerRow: 4,
+      statusColumn: "G",
+      merges: [{ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }],
+      cols: [
+        { wch: 24 }, { wch: 18 }, { wch: 22 }, { wch: 18 },
+        { wch: 18 }, { wch: 22 }, { wch: 14 }, { wch: 40 },
+      ],
+      rows: [{ hpt: 28 }, { hpt: 20 }, { hpt: 8 }, { hpt: 28 }],
+    });
+  }
+
+  async function exportCalibrationExcel() {
+    const response = await fetch(`${API_BASE}/api/calibration-records`, {
+      headers: createAuthHeaders(auth?.token),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok || result.success === false) {
+      alert(result.message || result.error || "Unable to export calibration Excel report.");
+      return;
+    }
+
+    const records = normalizeList(result, "calibration_records");
+
+    const rows = [
+      ["Calibration Status of Inspection, Monitoring & Test Equipments-UAE"],
+      [`Generated: ${xlsxDateStamp()}`, "", "", "", "", "", "", "", "", "", "", "OK", "PENDING", "Due in 30 Days"],
+      [],
+      [
+        "Sr.",
+        "Unique Identification",
+        "Description",
+        "Model",
+        "Manufacturer",
+        "Certificate Type",
+        "Frequency/Months",
+        "Tubestar / Outside Agency",
+        "Date",
+        "Certificate No.",
+        "Due Date",
+        "Status",
+        "Location",
+        "Remarks",
+        "Days",
+        "Attachment Ref",
+      ],
+      ...records.map((record, index) => {
+        const statusInfo = calibrationStatusFromExpiry(record.expiry_date);
+        return [
+          index + 1,
+          record.serial_number || "",
+          record.equipment_name || "",
+          record.model || "",
+          record.manufacturer || "",
+          record.certificate_type || "Calibration Certificate",
+          record.frequency_months || "",
+          record.calibration_agency || "",
+          record.calibration_date || "",
+          record.certificate_number || "",
+          record.expiry_date || "",
+          statusInfo.label === "Valid" ? "OK" : statusInfo.label,
+          record.current_site_name || record.current_site_code || "",
+          record.remarks || "",
+          daysBetweenToday(record.expiry_date),
+          record.attachment_ref || "",
+        ];
+      }),
+    ];
+
+    downloadStyledWorkbook("calibration-status-report.xlsx", "Calibration Status", rows, {
+      headerRow: 4,
+      statusColumn: "L",
+      merges: [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 15 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 10 } },
+      ],
+      cols: [
+        { wch: 8 }, { wch: 22 }, { wch: 24 }, { wch: 16 },
+        { wch: 18 }, { wch: 28 }, { wch: 16 }, { wch: 24 },
+        { wch: 14 }, { wch: 24 }, { wch: 14 }, { wch: 18 },
+        { wch: 18 }, { wch: 34 }, { wch: 10 }, { wch: 28 },
+      ],
+      rows: [{ hpt: 30 }, { hpt: 22 }, { hpt: 8 }, { hpt: 34 }],
+    });
+  }
 
   function exportAssetsCsv() {
     const rows = [
@@ -1126,7 +1352,10 @@ function App() {
                 <span>01</span>
                 <h4>Asset Master Report</h4>
                 <p>Complete equipment list with identification number, current location, expiry days, and status.</p>
-                <button className="primaryButton" onClick={exportAssetsCsv}>Download CSV</button>
+                <div className="v2HeroActions">
+                  <button className="primaryButton" onClick={exportAssetsCsv}>Download CSV</button>
+                  <button className="ghostButton" onClick={exportAssetsExcel}>Download Excel</button>
+                </div>
               </div>
 
               <div className="reportCard">
@@ -1153,7 +1382,10 @@ function App() {
                 <span>05</span>
                 <h4>Calibration Report</h4>
                 <p>Calibration visibility report with equipment number, current site, certificate number, expiry date, status, and attachment reference.</p>
-                <button className="primaryButton" onClick={exportCalibrationCsv}>Download CSV</button>
+                <div className="v2HeroActions">
+                  <button className="primaryButton" onClick={exportCalibrationCsv}>Download CSV</button>
+                  <button className="ghostButton" onClick={exportCalibrationExcel}>Download Excel</button>
+                </div>
               </div>
 
               <div className="reportCard">
@@ -3452,6 +3684,7 @@ function PlaceholderPage({ title, subtitle, cards }) {
 }
 
 export default App;
+
 
 
 
