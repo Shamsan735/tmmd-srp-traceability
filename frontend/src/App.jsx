@@ -21,6 +21,7 @@ const navItems = [
   { id: "movement", label: "Movement Entry", icon: "M" },
   { id: "traceability", label: "Traceability", icon: "T" },
   { id: "assets", label: "Asset Master", icon: "A" },
+  { id: "sites", label: "Site Master", icon: "S" },
   { id: "calibration", label: "Calibration", icon: "C" },
   { id: "pm", label: "PM / Checklist", icon: "P" },
   { id: "reports", label: "Reports", icon: "R" },
@@ -104,6 +105,9 @@ function App() {
   const [query, setQuery] = useState("");
   const [selectedAssetId, setSelectedAssetId] = useState("");
   const [destinationSiteId, setDestinationSiteId] = useState("");
+  const [movementCategory, setMovementCategory] = useState("");
+  const [movementEquipmentName, setMovementEquipmentName] = useState("");
+  const [movementType, setMovementType] = useState("Mobilization");
   const [movementNote, setMovementNote] = useState("");
   const [savingMovement, setSavingMovement] = useState(false);
   const [movementMessage, setMovementMessage] = useState("");
@@ -206,6 +210,30 @@ function App() {
     return assets.find((asset) => String(pickId(asset)) === String(selectedAssetId));
   }, [assets, selectedAssetId]);
 
+
+  const movementCategories = useMemo(() => {
+    return Array.from(
+      new Set(assets.map((asset) => asset?.category || "Uncategorized"))
+    ).sort();
+  }, [assets]);
+
+  const movementEquipmentNames = useMemo(() => {
+    return Array.from(
+      new Set(
+        assets
+          .filter((asset) => !movementCategory || (asset?.category || "Uncategorized") === movementCategory)
+          .map((asset) => getAssetName(asset))
+      )
+    ).sort();
+  }, [assets, movementCategory]);
+
+  const movementEquipmentNumbers = useMemo(() => {
+    return assets.filter((asset) => {
+      const categoryMatch = !movementCategory || (asset?.category || "Uncategorized") === movementCategory;
+      const nameMatch = !movementEquipmentName || getAssetName(asset) === movementEquipmentName;
+      return categoryMatch && nameMatch;
+    });
+  }, [assets, movementCategory, movementEquipmentName]);
   const filteredAssets = useMemo(() => {
     const term = query.trim().toLowerCase();
     if (!term) return assets;
@@ -258,11 +286,145 @@ function App() {
     return { critical, warning, valid, distribution, expirySorted };
   }, [assets, sites]);
 
+
+  function exportAssetsCsv() {
+    const rows = [
+      ["Equipment Name", "Equipment Number", "Category", "Manufacturer", "Model", "Current Site", "Status", "Remarks"],
+      ...assets.map((asset) => [
+        getAssetName(asset),
+        getAssetSerial(asset),
+        asset?.category || "",
+        asset?.manufacturer || "",
+        asset?.model || "",
+        getCurrentSiteName(asset, sites),
+        asset?.status || "",
+        asset?.remarks || "",
+      ]),
+    ];
+
+    downloadCsv("asset-master-report.csv", rows);
+  }
+
+  function exportExpiryCsv() {
+    const rows = [
+      ["Equipment Name", "Equipment Number", "Current Site", "Days Until Expiry", "Expiry Status"],
+      ...assets
+        .map((asset) => {
+          const days = daysUntilExpiry(asset);
+          const status = statusFromDays(days);
+          return [
+            getAssetName(asset),
+            getAssetSerial(asset),
+            getCurrentSiteName(asset, sites),
+            days === null ? "N/A" : days,
+            status.label,
+          ];
+        })
+        .sort((a, b) => {
+          const left = Number(a[3]);
+          const right = Number(b[3]);
+          if (Number.isNaN(left)) return 1;
+          if (Number.isNaN(right)) return -1;
+          return left - right;
+        }),
+    ];
+
+    downloadCsv("expiry-visibility-report.csv", rows);
+  }
+
+  function exportLocationCsv() {
+    const rows = [
+      ["Site Code", "Site Name", "City", "Country", "Mode", "Status", "Total Assets"],
+      ...sites.map((site) => {
+        const siteId = String(pickId(site));
+        const totalAssets = assets.filter((asset) => String(asset?.current_site_id ?? asset?.site_id) === siteId).length;
+
+        return [
+          site?.site_code || "",
+          getSiteName(site),
+          site?.city || "",
+          site?.country || "",
+          isRemoteSite(site) ? "Remote" : "Normal",
+          isSiteActive(site) ? "Active" : "Inactive",
+          totalAssets,
+        ];
+      }),
+    ];
+
+    downloadCsv("current-site-location-report.csv", rows);
+  }
+
+  async function exportMovementTrackingCsv() {
+    const response = await fetch(`${API_BASE}/api/movements`, {
+      headers: createAuthHeaders(auth?.token),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok || result.success === false) {
+      alert(result.message || result.error || "Unable to export movement report.");
+      return;
+    }
+
+    const movements = normalizeList(result, "movements");
+
+    const rows = [
+      ["Equipment Name", "Equipment Number", "Category", "From Site", "To Site", "Current Site", "Movement Date", "Movement Type", "Handed Over By", "Received By", "Remarks", "Status"],
+      ...movements.map((item) => [
+        item?.equipment_name || "",
+        item?.serial_number || "",
+        item?.category || "",
+        item?.from_site_name || item?.from_site || "",
+        item?.to_site_name || item?.to_site || "",
+        item?.current_site_name || "",
+        item?.movement_datetime || item?.created_at || "",
+        item?.movement_type || "",
+        item?.handed_over_by || "",
+        item?.received_by || "",
+        item?.remarks || "",
+        item?.status || "Recorded",
+      ]),
+    ];
+
+    downloadCsv("complete-mobilization-movement-tracking-report.csv", rows);
+  }
+
+  function exportCalibrationCsv() {
+    const rows = [
+      ["Equipment Name", "Equipment Number", "Category", "Current Site", "Certificate Number", "Expiry Date", "Status", "Attachment"],
+      ...assets.map((asset) => {
+        const days = daysUntilExpiry(asset);
+        const status = statusFromDays(days);
+
+        return [
+          getAssetName(asset),
+          getAssetSerial(asset),
+          asset?.category || "",
+          getCurrentSiteName(asset, sites),
+          asset?.certificate_number || "",
+          asset?.expiry_date || asset?.calibration_expiry_date || "",
+          status.label,
+          asset?.attachment_name || "",
+        ];
+      }),
+    ];
+
+    downloadCsv("calibration-report.csv", rows);
+  }
+
+  function exportPmChecklistCsv() {
+    const rows = [
+      ["Equipment Name", "Equipment Number", "Category", "Site", "Checklist Type", "Inspection Date", "Inspector Name", "PM Frequency", "Result", "Attachment", "Remarks"],
+      ["PM checklist records UI/API will be connected in the next module step.", "", "", "", "", "", "", "", "", "", ""],
+    ];
+
+    downloadCsv("pm-checklist-report.csv", rows);
+  }
   async function saveMovement(e) {
     e.preventDefault();
 
-    if (!selectedAssetId || !destinationSiteId) {
-      setMovementMessage("Please select asset and destination site.");
+    if (!movementCategory || !movementEquipmentName || !selectedAssetId || !destinationSiteId || !movementType) {
+      setMovementMessage("Please select category, equipment name, equipment number, movement type, and destination site.");
       return;
     }
 
@@ -280,7 +442,7 @@ function App() {
           asset_id: selectedAssetId,
           to_site_id: destinationSiteId,
           movement_datetime: new Date().toISOString(),
-          movement_type: "TRANSFER",
+          movement_type: movementType,
           remarks: movementNote || null,
           handed_over_by: "System Admin",
           received_by: "Destination Receiver",
@@ -302,6 +464,10 @@ function App() {
       setMovementMessage("Movement saved successfully. Current location updated.");
       setMovementNote("");
       setDestinationSiteId("");
+      setSelectedAssetId("");
+      setMovementEquipmentName("");
+      setMovementCategory("");
+      setMovementType("Mobilization");
       await loadData();
     } catch (error) {
       console.error(error);
@@ -419,7 +585,7 @@ function App() {
 
           <div className="navSectionLabel">Operations</div>
           {navItems
-            .filter((item) => ["movement", "assets", "reports"].includes(item.id))
+            .filter((item) => ["movement", "assets", "sites", "reports"].includes(item.id))
             .map((item) => (
               <button
                 key={item.id}
@@ -653,6 +819,7 @@ function App() {
                   <button onClick={() => setActiveTab("traceability")}><strong>Trace Asset</strong><span>Open movement history and audit trail</span></button>
                   <button onClick={() => setActiveTab("reports")}><strong>Download Reports</strong><span>Export asset, expiry, and location reports</span></button>
                   <button onClick={() => setActiveTab("assets")}><strong>Asset Master</strong><span>Review complete asset register</span></button>
+                  <button onClick={() => setActiveTab("sites")}><strong>Site Master</strong><span>Add, edit, activate, and deactivate locations</span></button>
                 </div>
               </Panel>
             </div>
@@ -662,30 +829,63 @@ function App() {
         {activeTab === "movement" && (
           <section className="pageGrid">
             <div className="twoColumn">
-              <Panel title="Movement Entry" action="Live location update">
+              <Panel title="Movement Entry V2" action="Mobilization / Transfer control">
                 <form className="formGrid" onSubmit={saveMovement}>
                   <label>
-                    Select Asset
+                    Category
+                    <select
+                      value={movementCategory}
+                      onChange={(e) => {
+                        setMovementCategory(e.target.value);
+                        setMovementEquipmentName("");
+                        setSelectedAssetId("");
+                      }}
+                    >
+                      <option value="">Choose category</option>
+                      {movementCategories.map((category) => (
+                        <option key={category} value={category}>{category}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>
+                    Equipment Name
+                    <select
+                      value={movementEquipmentName}
+                      onChange={(e) => {
+                        setMovementEquipmentName(e.target.value);
+                        setSelectedAssetId("");
+                      }}
+                    >
+                      <option value="">Choose equipment name</option>
+                      {movementEquipmentNames.map((name) => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>
+                    Equipment Number
                     <select value={selectedAssetId} onChange={(e) => setSelectedAssetId(e.target.value)}>
-                      <option value="">Choose asset</option>
-                      {assets.map((asset) => (
+                      <option value="">Choose equipment number</option>
+                      {movementEquipmentNumbers.map((asset) => (
                         <option key={pickId(asset)} value={pickId(asset)}>
-                          {getAssetName(asset)} — {getAssetSerial(asset)}
+                          {getAssetSerial(asset)}
                         </option>
                       ))}
                     </select>
                   </label>
 
                   <label>
-                    Current Location
-                    <input value={selectedAsset ? getCurrentSiteName(selectedAsset, sites) : ""} readOnly placeholder="Auto shown after asset selection" />
+                    Current Site
+                    <input value={selectedAsset ? getCurrentSiteName(selectedAsset, sites) : ""} readOnly placeholder="Auto shown after equipment number selection" />
                   </label>
 
                   <label>
                     Destination Site
                     <select value={destinationSiteId} onChange={(e) => setDestinationSiteId(e.target.value)}>
                       <option value="">Choose destination</option>
-                      {sites.map((site) => (
+                      {sites.filter(isSiteActive).map((site) => (
                         <option key={pickId(site)} value={pickId(site)}>
                           {getSiteName(site)}
                         </option>
@@ -694,15 +894,28 @@ function App() {
                   </label>
 
                   <label>
-                    Movement Note
-                    <input value={movementNote} onChange={(e) => setMovementNote(e.target.value)} placeholder="Optional note / reference" />
+                    Movement Type
+                    <select value={movementType} onChange={(e) => setMovementType(e.target.value)}>
+                      <option value="Mobilization">Mobilization</option>
+                      <option value="Demobilization">Demobilization</option>
+                      <option value="Transfer">Transfer</option>
+                      <option value="Return">Return</option>
+                      <option value="Maintenance Movement">Maintenance Movement</option>
+                      <option value="Calibration">Calibration</option>
+                      <option value="Site to Site Movement">Site to Site Movement</option>
+                    </select>
+                  </label>
+
+                  <label className="wide">
+                    Remarks
+                    <input value={movementNote} onChange={(e) => setMovementNote(e.target.value)} placeholder="Optional remarks / reference" />
                   </label>
 
                   <button className="primaryButton wide" disabled={savingMovement}>
                     {savingMovement ? "Saving..." : "Save Movement"}
                   </button>
 
-                  {movementMessage && <div className="messageBox">{movementMessage}</div>}
+                  {movementMessage && <div className="messageBox wide">{movementMessage}</div>}
                 </form>
               </Panel>
 
@@ -766,9 +979,9 @@ function App() {
                     <div className="timelineItem" key={item.id || index}>
                       <span className="timelineDot" />
                       <div>
-                        <strong>{item.from_site_name || item.from_location || "Previous Site"} → {item.to_site_name || item.to_location || "New Site"}</strong>
-                        <p>{item.movement_date || item.created_at || "Date not available"}</p>
-                        <small>{item.notes || item.stayed_duration || "Movement recorded in audit trail"}</small>
+                        <strong>{item.from_site_name || item.from_site || item.from_location || "Previous Site"} → {item.to_site_name || item.to_site || item.to_location || "New Site"}</strong>
+                        <p>{item.movement_datetime || item.movement_date || item.created_at || "Date not available"}</p>
+                        <small>{item.remarks || item.notes || item.stayed_duration || (item.stayed_days_at_to_site ? `${item.stayed_days_at_to_site} day(s) at site` : "Movement recorded in audit trail")}</small>
                       </div>
                     </div>
                   ))}
@@ -778,44 +991,37 @@ function App() {
             </div>
           </section>
         )}
-
         {activeTab === "assets" && (
-          <section className="pageGrid">
-            <Panel title="Asset Master Register" action={`${filteredAssets.length} asset(s)`}>
-              <input
-                className="searchInput"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Filter asset master..."
-              />
-              <AssetTable assets={filteredAssets} sites={sites} />
-            </Panel>
-          </section>
-        )}
-
-        {activeTab === "calibration" && (
-          <PlaceholderPage
-            title="Calibration Control"
-            subtitle="Next phase module for calibration certificates, expiry proof, attachments, and compliance status."
-            cards={[
-              "Calibration expiry dashboard",
-              "Certificate upload after R2 activation",
-              "Due / overdue alerts",
-              "Asset-wise calibration history",
-            ]}
+          <AssetMasterPage
+            assets={filteredAssets}
+            allAssets={assets}
+            sites={sites}
+            auth={auth}
+            query={query}
+            setQuery={setQuery}
+            loadData={loadData}
           />
         )}
 
+        {activeTab === "sites" && (
+          <SiteMasterPage
+            sites={sites}
+            auth={auth}
+            loadData={loadData}
+          />
+        )}
+        {activeTab === "calibration" && (
+          <CalibrationPage
+            assets={assets}
+            sites={sites}
+            auth={auth}
+          />
+        )}
         {activeTab === "pm" && (
-          <PlaceholderPage
-            title="PM / Checklist Control"
-            subtitle="Professional placeholder for preventive maintenance and checklist records."
-            cards={[
-              "Monthly / 3-month PM frequency",
-              "Equipment checklist by ID",
-              "Inspection result tracking",
-              "Photo proof after R2 activation",
-            ]}
+          <PmMaintenancePage
+            assets={assets}
+            sites={sites}
+            auth={auth}
           />
         )}
 
@@ -826,7 +1032,7 @@ function App() {
                 <p className="eyebrow">Export Center</p>
                 <h3>Reports & Download Center</h3>
                 <p>
-                  Download client-ready CSV reports for asset master, expiry visibility, and location summary.
+                  Download client-ready CSV reports for asset master, expiry visibility, current site location, movement tracking, calibration, and PM checklist records.
                 </p>
               </div>
 
@@ -863,9 +1069,29 @@ function App() {
 
               <div className="reportCard">
                 <span>03</span>
-                <h4>Location Summary Report</h4>
+                <h4>Current Site Location Report</h4>
                 <p>Site-wise asset distribution summary for operational visibility and management review.</p>
                 <button className="primaryButton" onClick={exportLocationCsv}>Download CSV</button>
+              </div>
+              <div className="reportCard">
+                <span>04</span>
+                <h4>Complete Mobilization / Movement Tracking Report</h4>
+                <p>Full asset movement history with equipment number, from site, to site, current site, movement date, type, handover, receiver, and remarks.</p>
+                <button className="primaryButton" onClick={exportMovementTrackingCsv}>Download CSV</button>
+              </div>
+
+              <div className="reportCard">
+                <span>05</span>
+                <h4>Calibration Report</h4>
+                <p>Calibration visibility report with equipment number, current site, certificate number, expiry date, status, and attachment reference.</p>
+                <button className="primaryButton" onClick={exportCalibrationCsv}>Download CSV</button>
+              </div>
+
+              <div className="reportCard">
+                <span>06</span>
+                <h4>PM Checklist Report</h4>
+                <p>PM checklist report format with equipment, site, inspection date, inspector, PM frequency, result, attachment, and remarks.</p>
+                <button className="primaryButton" onClick={exportPmChecklistCsv}>Download CSV</button>
               </div>
             </div>
           </section>
@@ -992,6 +1218,1469 @@ function Panel({ title, action, children }) {
   );
 }
 
+
+function isSiteActive(site) {
+  const value = site?.is_active;
+  if (value === undefined || value === null) return true;
+  return value === true || value === 1 || value === "1";
+}
+
+function isRemoteSite(site) {
+  const value = site?.is_remote;
+  return value === true || value === 1 || value === "1";
+}
+
+
+
+function calibrationStatusFromExpiry(expiryDate) {
+  if (!expiryDate) return { label: "No Expiry", className: "neutral", days: null };
+
+  const today = new Date();
+  const expiry = new Date(expiryDate);
+  if (Number.isNaN(expiry.getTime())) return { label: "Invalid Date", className: "neutral", days: null };
+
+  today.setHours(0, 0, 0, 0);
+  expiry.setHours(0, 0, 0, 0);
+
+  const days = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (days < 0) return { label: "Due", className: "danger", days };
+  if (days <= 10) return { label: "Critical", className: "warning", days };
+  if (days <= 30) return { label: "Attention Required", className: "warning", days };
+  return { label: "Valid", className: "success", days };
+}
+
+
+function PmMaintenancePage({ assets, sites, auth }) {
+  const emptyPmForm = {
+    asset_id: "",
+    checklist_type: "PM",
+    checklist_date: "",
+    performed_by: "",
+    pm_frequency: "Monthly",
+    result: "Pass",
+    next_due_date: "",
+    attachment_ref: "",
+    remarks: "",
+  };
+
+  const emptyRepairForm = {
+    asset_id: "",
+    site_id: "",
+    repair_date: "",
+    fault_description: "",
+    action_taken: "",
+    repaired_by: "",
+    parts_used: "",
+    status: "Open",
+    attachment_ref: "",
+    remarks: "",
+  };
+
+  const [pmForm, setPmForm] = useState(emptyPmForm);
+  const [repairForm, setRepairForm] = useState(emptyRepairForm);
+  const [pmRecords, setPmRecords] = useState([]);
+  const [repairRecords, setRepairRecords] = useState([]);
+  const [editingPmId, setEditingPmId] = useState("");
+  const [editingRepairId, setEditingRepairId] = useState("");
+  const [savingPm, setSavingPm] = useState(false);
+  const [savingRepair, setSavingRepair] = useState(false);
+  const [pmMessage, setPmMessage] = useState("");
+  const [repairMessage, setRepairMessage] = useState("");
+
+  const [pmCategory, setPmCategory] = useState("");
+  const [pmEquipmentName, setPmEquipmentName] = useState("");
+  const [repairCategory, setRepairCategory] = useState("");
+  const [repairEquipmentName, setRepairEquipmentName] = useState("");
+
+  const selectedPmAsset = assets.find((asset) => String(pickId(asset)) === String(pmForm.asset_id));
+  const selectedRepairAsset = assets.find((asset) => String(pickId(asset)) === String(repairForm.asset_id));
+
+  const categories = useMemo(() => {
+    return Array.from(new Set(assets.map((asset) => asset?.category || "Uncategorized"))).sort();
+  }, [assets]);
+
+  const pmEquipmentNames = useMemo(() => {
+    return Array.from(
+      new Set(
+        assets
+          .filter((asset) => !pmCategory || (asset?.category || "Uncategorized") === pmCategory)
+          .map((asset) => getAssetName(asset))
+      )
+    ).sort();
+  }, [assets, pmCategory]);
+
+  const pmEquipmentNumbers = useMemo(() => {
+    return assets.filter((asset) => {
+      const categoryMatch = !pmCategory || (asset?.category || "Uncategorized") === pmCategory;
+      const nameMatch = !pmEquipmentName || getAssetName(asset) === pmEquipmentName;
+      return categoryMatch && nameMatch;
+    });
+  }, [assets, pmCategory, pmEquipmentName]);
+
+  const repairEquipmentNames = useMemo(() => {
+    return Array.from(
+      new Set(
+        assets
+          .filter((asset) => !repairCategory || (asset?.category || "Uncategorized") === repairCategory)
+          .map((asset) => getAssetName(asset))
+      )
+    ).sort();
+  }, [assets, repairCategory]);
+
+  const repairEquipmentNumbers = useMemo(() => {
+    return assets.filter((asset) => {
+      const categoryMatch = !repairCategory || (asset?.category || "Uncategorized") === repairCategory;
+      const nameMatch = !repairEquipmentName || getAssetName(asset) === repairEquipmentName;
+      return categoryMatch && nameMatch;
+    });
+  }, [assets, repairCategory, repairEquipmentName]);
+
+  async function loadPmRecords() {
+    try {
+      const response = await fetch(`${API_BASE}/api/checklist-records`, {
+        headers: createAuthHeaders(auth?.token),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || result.error || "Unable to load PM records.");
+      }
+
+      setPmRecords(normalizeList(result, "checklist_records"));
+    } catch (error) {
+      console.error(error);
+      setPmMessage(error.message || "Unable to load PM records.");
+    }
+  }
+
+  async function loadRepairRecords() {
+    try {
+      const response = await fetch(`${API_BASE}/api/asset-repairs`, {
+        headers: createAuthHeaders(auth?.token),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || result.error || "Unable to load repair history.");
+      }
+
+      setRepairRecords(normalizeList(result, "asset_repairs"));
+    } catch (error) {
+      console.error(error);
+      setRepairMessage(error.message || "Unable to load repair history.");
+    }
+  }
+
+  useEffect(() => {
+    loadPmRecords();
+    loadRepairRecords();
+  }, []);
+
+  function updatePmForm(field, value) {
+    setPmForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function updateRepairForm(field, value) {
+    setRepairForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function resetPmForm() {
+    setPmForm(emptyPmForm);
+    setEditingPmId("");
+    setPmCategory("");
+    setPmEquipmentName("");
+    setPmMessage("");
+  }
+
+  function resetRepairForm() {
+    setRepairForm(emptyRepairForm);
+    setEditingRepairId("");
+    setRepairCategory("");
+    setRepairEquipmentName("");
+    setRepairMessage("");
+  }
+
+  function startPmEdit(record) {
+    setEditingPmId(String(record.id));
+    setPmCategory(record.category || "");
+    setPmEquipmentName(record.equipment_name || "");
+    setPmForm({
+      asset_id: String(record.asset_id || ""),
+      checklist_type: record.checklist_type || "PM",
+      checklist_date: record.checklist_date || "",
+      performed_by: record.performed_by || "",
+      pm_frequency: record.pm_frequency || "Monthly",
+      result: record.result || "Pass",
+      next_due_date: record.next_due_date || "",
+      attachment_ref: record.attachment_ref || "",
+      remarks: record.remarks || "",
+    });
+    setPmMessage("Editing selected PM record.");
+  }
+
+  function startRepairEdit(record) {
+    setEditingRepairId(String(record.id));
+    setRepairCategory(record.category || "");
+    setRepairEquipmentName(record.equipment_name || "");
+    setRepairForm({
+      asset_id: String(record.asset_id || ""),
+      site_id: record.site_id ? String(record.site_id) : "",
+      repair_date: record.repair_date || "",
+      fault_description: record.fault_description || "",
+      action_taken: record.action_taken || "",
+      repaired_by: record.repaired_by || "",
+      parts_used: record.parts_used || "",
+      status: record.status || "Open",
+      attachment_ref: record.attachment_ref || "",
+      remarks: record.remarks || "",
+    });
+    setRepairMessage("Editing selected repair history record.");
+  }
+
+  async function savePmRecord(e) {
+    e.preventDefault();
+
+    if (!pmForm.asset_id || !pmForm.checklist_type || !pmForm.checklist_date) {
+      setPmMessage("Equipment Number, Checklist Type and Inspection Date are required.");
+      return;
+    }
+
+    setSavingPm(true);
+    setPmMessage("");
+
+    try {
+      const response = await fetch(
+        editingPmId ? `${API_BASE}/api/checklist-records/${editingPmId}` : `${API_BASE}/api/checklist-records`,
+        {
+          method: editingPmId ? "PUT" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...createAuthHeaders(auth?.token),
+          },
+          body: JSON.stringify(pmForm),
+        }
+      );
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || result.error || "Unable to save PM checklist.");
+      }
+
+      setPmMessage(editingPmId ? "PM checklist updated successfully." : "PM checklist saved successfully.");
+      setPmForm(emptyPmForm);
+      setEditingPmId("");
+      setPmCategory("");
+      setPmEquipmentName("");
+      await loadPmRecords();
+    } catch (error) {
+      console.error(error);
+      setPmMessage(error.message || "Unable to save PM checklist.");
+    } finally {
+      setSavingPm(false);
+    }
+  }
+
+  async function saveRepairRecord(e) {
+    e.preventDefault();
+
+    if (!repairForm.asset_id || !repairForm.repair_date || !repairForm.fault_description.trim()) {
+      setRepairMessage("Equipment Number, Repair Date and Fault / Issue are required.");
+      return;
+    }
+
+    setSavingRepair(true);
+    setRepairMessage("");
+
+    const payload = {
+      ...repairForm,
+      site_id: repairForm.site_id || selectedRepairAsset?.current_site_id || null,
+    };
+
+    try {
+      const response = await fetch(
+        editingRepairId ? `${API_BASE}/api/asset-repairs/${editingRepairId}` : `${API_BASE}/api/asset-repairs`,
+        {
+          method: editingRepairId ? "PUT" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...createAuthHeaders(auth?.token),
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || result.error || "Unable to save repair history.");
+      }
+
+      setRepairMessage(editingRepairId ? "Repair history updated successfully." : "Repair history saved successfully.");
+      setRepairForm(emptyRepairForm);
+      setEditingRepairId("");
+      setRepairCategory("");
+      setRepairEquipmentName("");
+      await loadRepairRecords();
+    } catch (error) {
+      console.error(error);
+      setRepairMessage(error.message || "Unable to save repair history.");
+    } finally {
+      setSavingRepair(false);
+    }
+  }
+
+  return (
+    <section className="pageGrid">
+      <div className="dashboardIntro">
+        <div>
+          <p className="eyebrow">Maintenance Control</p>
+          <h3>PM / Checklist & Asset Repair History</h3>
+          <p>
+            Simplified PM records with attachment reference plus complete equipment-wise asset repair history.
+          </p>
+        </div>
+        <div className="summaryChips">
+          <div className="summaryChip">
+            <span>PM Records</span>
+            <strong>{pmRecords.length}</strong>
+          </div>
+          <div className="summaryChip">
+            <span>Repairs</span>
+            <strong>{repairRecords.length}</strong>
+          </div>
+          <div className="summaryChip">
+            <span>Assets</span>
+            <strong>{assets.length}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="twoColumn">
+        <Panel title={editingPmId ? "Update PM Checklist" : "Add PM Checklist"} action="Simplified PM record">
+          <form className="formGrid" onSubmit={savePmRecord}>
+            <label>
+              Category
+              <select value={pmCategory} onChange={(e) => { setPmCategory(e.target.value); setPmEquipmentName(""); updatePmForm("asset_id", ""); }}>
+                <option value="">Choose category</option>
+                {categories.map((category) => <option key={category} value={category}>{category}</option>)}
+              </select>
+            </label>
+
+            <label>
+              Equipment Name
+              <select value={pmEquipmentName} onChange={(e) => { setPmEquipmentName(e.target.value); updatePmForm("asset_id", ""); }}>
+                <option value="">Choose equipment name</option>
+                {pmEquipmentNames.map((name) => <option key={name} value={name}>{name}</option>)}
+              </select>
+            </label>
+
+            <label>
+              Equipment Number
+              <select value={pmForm.asset_id} onChange={(e) => updatePmForm("asset_id", e.target.value)}>
+                <option value="">Choose equipment number</option>
+                {pmEquipmentNumbers.map((asset) => <option key={pickId(asset)} value={pickId(asset)}>{getAssetSerial(asset)}</option>)}
+              </select>
+            </label>
+
+            <label>
+              Site
+              <input value={selectedPmAsset ? getCurrentSiteName(selectedPmAsset, sites) : ""} readOnly placeholder="Auto shown" />
+            </label>
+
+            <label>
+              Checklist Type
+              <select value={pmForm.checklist_type} onChange={(e) => updatePmForm("checklist_type", e.target.value)}>
+                <option value="PM">PM</option>
+                <option value="Inspection">Inspection</option>
+                <option value="NDT">NDT</option>
+              </select>
+            </label>
+
+            <label>
+              Inspection Date
+              <input type="date" value={pmForm.checklist_date} onChange={(e) => updatePmForm("checklist_date", e.target.value)} />
+            </label>
+
+            <label>
+              Inspector Name
+              <input value={pmForm.performed_by} onChange={(e) => updatePmForm("performed_by", e.target.value)} placeholder="Inspector name" />
+            </label>
+
+            <label>
+              PM Frequency
+              <select value={pmForm.pm_frequency} onChange={(e) => updatePmForm("pm_frequency", e.target.value)}>
+                <option value="Monthly">Monthly</option>
+                <option value="3 Months">3 Months</option>
+                <option value="6 Months">6 Months</option>
+                <option value="Yearly">Yearly</option>
+                <option value="As Required">As Required</option>
+              </select>
+            </label>
+
+            <label>
+              Result
+              <select value={pmForm.result} onChange={(e) => updatePmForm("result", e.target.value)}>
+                <option value="Pass">Pass</option>
+                <option value="Fail">Fail</option>
+                <option value="Observation">Observation</option>
+                <option value="Pending">Pending</option>
+              </select>
+            </label>
+
+            <label>
+              Attachment Ref
+              <input value={pmForm.attachment_ref} onChange={(e) => updatePmForm("attachment_ref", e.target.value)} placeholder="File name / SharePoint ref later" />
+            </label>
+
+            <label className="wide">
+              Remarks
+              <input value={pmForm.remarks} onChange={(e) => updatePmForm("remarks", e.target.value)} placeholder="Remarks" />
+            </label>
+
+            <div className="v2HeroActions wide">
+              <button className="primaryButton" type="submit" disabled={savingPm}>{savingPm ? "Saving..." : editingPmId ? "Update PM" : "Save PM"}</button>
+              <button className="ghostButton" type="button" onClick={resetPmForm}>Clear</button>
+            </div>
+
+            {pmMessage && <div className="messageBox wide">{pmMessage}</div>}
+          </form>
+        </Panel>
+
+        <Panel title={editingRepairId ? "Update Asset Repair History" : "Add Asset Repair History"} action="Equipment-wise maintenance">
+          <form className="formGrid" onSubmit={saveRepairRecord}>
+            <label>
+              Category
+              <select value={repairCategory} onChange={(e) => { setRepairCategory(e.target.value); setRepairEquipmentName(""); updateRepairForm("asset_id", ""); }}>
+                <option value="">Choose category</option>
+                {categories.map((category) => <option key={category} value={category}>{category}</option>)}
+              </select>
+            </label>
+
+            <label>
+              Equipment Name
+              <select value={repairEquipmentName} onChange={(e) => { setRepairEquipmentName(e.target.value); updateRepairForm("asset_id", ""); }}>
+                <option value="">Choose equipment name</option>
+                {repairEquipmentNames.map((name) => <option key={name} value={name}>{name}</option>)}
+              </select>
+            </label>
+
+            <label>
+              Equipment Number
+              <select value={repairForm.asset_id} onChange={(e) => updateRepairForm("asset_id", e.target.value)}>
+                <option value="">Choose equipment number</option>
+                {repairEquipmentNumbers.map((asset) => <option key={pickId(asset)} value={pickId(asset)}>{getAssetSerial(asset)}</option>)}
+              </select>
+            </label>
+
+            <label>
+              Site
+              <select value={repairForm.site_id || selectedRepairAsset?.current_site_id || ""} onChange={(e) => updateRepairForm("site_id", e.target.value)}>
+                <option value="">Auto / choose site</option>
+                {sites.filter(isSiteActive).map((site) => <option key={pickId(site)} value={pickId(site)}>{getSiteName(site)}</option>)}
+              </select>
+            </label>
+
+            <label>
+              Repair Date
+              <input type="date" value={repairForm.repair_date} onChange={(e) => updateRepairForm("repair_date", e.target.value)} />
+            </label>
+
+            <label>
+              Status
+              <select value={repairForm.status} onChange={(e) => updateRepairForm("status", e.target.value)}>
+                <option value="Open">Open</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Pending Parts">Pending Parts</option>
+                <option value="Completed">Completed</option>
+                <option value="Closed">Closed</option>
+              </select>
+            </label>
+
+            <label className="wide">
+              Fault / Issue
+              <input value={repairForm.fault_description} onChange={(e) => updateRepairForm("fault_description", e.target.value)} placeholder="Fault / issue description" />
+            </label>
+
+            <label>
+              Action Taken
+              <input value={repairForm.action_taken} onChange={(e) => updateRepairForm("action_taken", e.target.value)} placeholder="Action taken" />
+            </label>
+
+            <label>
+              Repaired By
+              <input value={repairForm.repaired_by} onChange={(e) => updateRepairForm("repaired_by", e.target.value)} placeholder="Technician / team" />
+            </label>
+
+            <label>
+              Parts Used
+              <input value={repairForm.parts_used} onChange={(e) => updateRepairForm("parts_used", e.target.value)} placeholder="Parts used" />
+            </label>
+
+            <label>
+              Attachment Ref
+              <input value={repairForm.attachment_ref} onChange={(e) => updateRepairForm("attachment_ref", e.target.value)} placeholder="Photo/file name later" />
+            </label>
+
+            <label className="wide">
+              Remarks
+              <input value={repairForm.remarks} onChange={(e) => updateRepairForm("remarks", e.target.value)} placeholder="Remarks" />
+            </label>
+
+            <div className="v2HeroActions wide">
+              <button className="primaryButton" type="submit" disabled={savingRepair}>{savingRepair ? "Saving..." : editingRepairId ? "Update Repair" : "Save Repair"}</button>
+              <button className="ghostButton" type="button" onClick={resetRepairForm}>Clear</button>
+            </div>
+
+            {repairMessage && <div className="messageBox wide">{repairMessage}</div>}
+          </form>
+        </Panel>
+      </div>
+
+      <div className="twoColumn">
+        <Panel title="PM Checklist Records" action={`${pmRecords.length} record(s)`}>
+          <div className="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Equipment</th>
+                  <th>Number</th>
+                  <th>Site</th>
+                  <th>Type</th>
+                  <th>Date</th>
+                  <th>Frequency</th>
+                  <th>Result</th>
+                  <th>Attachment</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pmRecords.map((record) => (
+                  <tr key={record.id}>
+                    <td><strong>{record.equipment_name || "-"}</strong></td>
+                    <td>{record.serial_number || "-"}</td>
+                    <td>{record.current_site_name || "-"}</td>
+                    <td>{record.checklist_type || "-"}</td>
+                    <td>{record.checklist_date || "-"}</td>
+                    <td>{record.pm_frequency || "-"}</td>
+                    <td><span className={`badge ${record.result === "Fail" ? "danger" : record.result === "Pending" ? "warning" : "success"}`}>{record.result || "-"}</span></td>
+                    <td>{record.attachment_ref || "-"}</td>
+                    <td><button className="ghostButton" type="button" onClick={() => startPmEdit(record)}>Edit</button></td>
+                  </tr>
+                ))}
+                {!pmRecords.length && (
+                  <tr><td colSpan="9"><Empty text="No PM checklist records found." /></td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+
+        <Panel title="Asset Repair History" action={`${repairRecords.length} record(s)`}>
+          <div className="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Equipment</th>
+                  <th>Number</th>
+                  <th>Site</th>
+                  <th>Repair Date</th>
+                  <th>Fault / Issue</th>
+                  <th>Repaired By</th>
+                  <th>Status</th>
+                  <th>Attachment</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {repairRecords.map((record) => (
+                  <tr key={record.id}>
+                    <td><strong>{record.equipment_name || "-"}</strong></td>
+                    <td>{record.serial_number || "-"}</td>
+                    <td>{record.site_name || "-"}</td>
+                    <td>{record.repair_date || "-"}</td>
+                    <td>{record.fault_description || "-"}</td>
+                    <td>{record.repaired_by || "-"}</td>
+                    <td><span className={`badge ${record.status === "Completed" || record.status === "Closed" ? "success" : record.status === "Pending Parts" ? "warning" : "neutral"}`}>{record.status || "-"}</span></td>
+                    <td>{record.attachment_ref || "-"}</td>
+                    <td><button className="ghostButton" type="button" onClick={() => startRepairEdit(record)}>Edit</button></td>
+                  </tr>
+                ))}
+                {!repairRecords.length && (
+                  <tr><td colSpan="9"><Empty text="No repair history records found." /></td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+      </div>
+    </section>
+  );
+}
+
+function CalibrationPage({ assets, sites, auth }) {
+  const emptyForm = {
+    asset_id: "",
+    certificate_type: "Calibration Certificate",
+    certificate_number: "",
+    calibration_date: "",
+    expiry_date: "",
+    calibration_agency: "",
+    result: "Pass",
+    attachment_ref: "",
+    remarks: "",
+  };
+
+  const [form, setForm] = useState(emptyForm);
+  const [records, setRecords] = useState([]);
+  const [editingRecordId, setEditingRecordId] = useState("");
+  const [savingRecord, setSavingRecord] = useState(false);
+  const [loadingRecords, setLoadingRecords] = useState(false);
+  const [message, setMessage] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [equipmentNameFilter, setEquipmentNameFilter] = useState("");
+
+  const selectedAsset = assets.find((asset) => String(pickId(asset)) === String(form.asset_id));
+
+  const categories = useMemo(() => {
+    return Array.from(new Set(assets.map((asset) => asset?.category || "Uncategorized"))).sort();
+  }, [assets]);
+
+  const equipmentNames = useMemo(() => {
+    return Array.from(
+      new Set(
+        assets
+          .filter((asset) => !categoryFilter || (asset?.category || "Uncategorized") === categoryFilter)
+          .map((asset) => getAssetName(asset))
+      )
+    ).sort();
+  }, [assets, categoryFilter]);
+
+  const equipmentNumbers = useMemo(() => {
+    return assets.filter((asset) => {
+      const categoryMatch = !categoryFilter || (asset?.category || "Uncategorized") === categoryFilter;
+      const nameMatch = !equipmentNameFilter || getAssetName(asset) === equipmentNameFilter;
+      return categoryMatch && nameMatch;
+    });
+  }, [assets, categoryFilter, equipmentNameFilter]);
+
+  async function loadCalibrationRecords() {
+    setLoadingRecords(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/api/calibration-records`, {
+        headers: createAuthHeaders(auth?.token),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || result.error || "Unable to load calibration records.");
+      }
+
+      setRecords(normalizeList(result, "calibration_records"));
+    } catch (error) {
+      console.error(error);
+      setMessage(error.message || "Unable to load calibration records.");
+    } finally {
+      setLoadingRecords(false);
+    }
+  }
+
+  useEffect(() => {
+    loadCalibrationRecords();
+  }, []);
+
+  function updateForm(field, value) {
+    setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function resetForm() {
+    setForm(emptyForm);
+    setEditingRecordId("");
+    setCategoryFilter("");
+    setEquipmentNameFilter("");
+    setMessage("");
+  }
+
+  function startEdit(record) {
+    setEditingRecordId(String(record.id));
+    setForm({
+      asset_id: String(record.asset_id || ""),
+      certificate_type: record.certificate_type || "Calibration Certificate",
+      certificate_number: record.certificate_number || "",
+      calibration_date: record.calibration_date || "",
+      expiry_date: record.expiry_date || "",
+      calibration_agency: record.calibration_agency || "",
+      result: record.result || "Pass",
+      attachment_ref: record.attachment_ref || "",
+      remarks: record.remarks || "",
+    });
+    setCategoryFilter(record.category || "");
+    setEquipmentNameFilter(record.equipment_name || "");
+    setMessage("Editing selected calibration record.");
+  }
+
+  async function saveCalibration(e) {
+    e.preventDefault();
+
+    if (!form.asset_id || !form.certificate_number.trim() || !form.expiry_date) {
+      setMessage("Equipment Number, Certificate Number, and Expiry Date are required.");
+      return;
+    }
+
+    setSavingRecord(true);
+    setMessage("");
+
+    const expiryStatus = calibrationStatusFromExpiry(form.expiry_date);
+
+    try {
+      const response = await fetch(
+        editingRecordId ? `${API_BASE}/api/calibration-records/${editingRecordId}` : `${API_BASE}/api/calibration-records`,
+        {
+          method: editingRecordId ? "PUT" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...createAuthHeaders(auth?.token),
+          },
+          body: JSON.stringify({
+            asset_id: form.asset_id,
+            certificate_type: form.certificate_type,
+            certificate_number: form.certificate_number.trim(),
+            calibration_date: form.calibration_date || null,
+            expiry_date: form.expiry_date,
+            calibration_agency: form.calibration_agency.trim(),
+            result: form.result,
+            status: expiryStatus.label,
+            attachment_ref: form.attachment_ref.trim(),
+            remarks: form.remarks.trim(),
+          }),
+        }
+      );
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || result.error || "Unable to save calibration record.");
+      }
+
+      setMessage(editingRecordId ? "Calibration record updated successfully." : "Calibration record saved successfully.");
+      setForm(emptyForm);
+      setEditingRecordId("");
+      setCategoryFilter("");
+      setEquipmentNameFilter("");
+      await loadCalibrationRecords();
+    } catch (error) {
+      console.error(error);
+      setMessage(error.message || "Unable to save calibration record.");
+    } finally {
+      setSavingRecord(false);
+    }
+  }
+
+  return (
+    <section className="pageGrid">
+      <div className="dashboardIntro">
+        <div>
+          <p className="eyebrow">Certificate Control</p>
+          <h3>Calibration Control</h3>
+          <p>
+            Record calibration certificates with expiry status, agency, result, attachment reference, and equipment-wise history.
+          </p>
+        </div>
+        <div className="summaryChips">
+          <div className="summaryChip">
+            <span>Records</span>
+            <strong>{records.length}</strong>
+          </div>
+          <div className="summaryChip">
+            <span>Critical</span>
+            <strong>{records.filter((record) => calibrationStatusFromExpiry(record.expiry_date).label === "Critical").length}</strong>
+          </div>
+          <div className="summaryChip">
+            <span>Due</span>
+            <strong>{records.filter((record) => calibrationStatusFromExpiry(record.expiry_date).label === "Due").length}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="twoColumn">
+        <Panel title={editingRecordId ? "Update Calibration Record" : "Add Calibration Record"} action="Certificate workflow">
+          <form className="formGrid" onSubmit={saveCalibration}>
+            <label>
+              Category
+              <select
+                value={categoryFilter}
+                onChange={(e) => {
+                  setCategoryFilter(e.target.value);
+                  setEquipmentNameFilter("");
+                  updateForm("asset_id", "");
+                }}
+              >
+                <option value="">Choose category</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Equipment Name
+              <select
+                value={equipmentNameFilter}
+                onChange={(e) => {
+                  setEquipmentNameFilter(e.target.value);
+                  updateForm("asset_id", "");
+                }}
+              >
+                <option value="">Choose equipment name</option>
+                {equipmentNames.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Equipment Number
+              <select value={form.asset_id} onChange={(e) => updateForm("asset_id", e.target.value)}>
+                <option value="">Choose equipment number</option>
+                {equipmentNumbers.map((asset) => (
+                  <option key={pickId(asset)} value={pickId(asset)}>
+                    {getAssetSerial(asset)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Site
+              <input value={selectedAsset ? getCurrentSiteName(selectedAsset, sites) : ""} readOnly placeholder="Auto shown after equipment number selection" />
+            </label>
+
+            <label>
+              Certificate Type
+              <select value={form.certificate_type} onChange={(e) => updateForm("certificate_type", e.target.value)}>
+                <option value="Calibration Certificate">Calibration Certificate</option>
+                <option value="Master OEM Certificate">Master OEM Certificate</option>
+                <option value="Third Party Calibration Certificate">Third Party Calibration Certificate</option>
+                <option value="Internal Verification Record">Internal Verification Record</option>
+              </select>
+            </label>
+
+            <label>
+              Certificate Number
+              <input value={form.certificate_number} onChange={(e) => updateForm("certificate_number", e.target.value)} placeholder="Certificate number" />
+            </label>
+
+            <label>
+              Calibration Date
+              <input type="date" value={form.calibration_date} onChange={(e) => updateForm("calibration_date", e.target.value)} />
+            </label>
+
+            <label>
+              Expiry Date
+              <input type="date" value={form.expiry_date} onChange={(e) => updateForm("expiry_date", e.target.value)} />
+            </label>
+
+            <label>
+              Calibration Agency
+              <input value={form.calibration_agency} onChange={(e) => updateForm("calibration_agency", e.target.value)} placeholder="Agency / lab name" />
+            </label>
+
+            <label>
+              Result
+              <select value={form.result} onChange={(e) => updateForm("result", e.target.value)}>
+                <option value="Pass">Pass</option>
+                <option value="Fail">Fail</option>
+                <option value="Conditional Pass">Conditional Pass</option>
+                <option value="Pending">Pending</option>
+              </select>
+            </label>
+
+            <label>
+              Certificate Attachment Ref
+              <input value={form.attachment_ref} onChange={(e) => updateForm("attachment_ref", e.target.value)} placeholder="File name / SharePoint ref later" />
+            </label>
+
+            <label>
+              Remarks
+              <input value={form.remarks} onChange={(e) => updateForm("remarks", e.target.value)} placeholder="Remarks" />
+            </label>
+
+            <div className="v2HeroActions wide">
+              <button className="primaryButton" type="submit" disabled={savingRecord}>
+                {savingRecord ? "Saving..." : editingRecordId ? "Update Calibration" : "Save Calibration"}
+              </button>
+              <button className="ghostButton" type="button" onClick={resetForm}>
+                Clear
+              </button>
+            </div>
+
+            {message && <div className="messageBox wide">{message}</div>}
+          </form>
+        </Panel>
+
+        <Panel title="Calibration Items Sheet" action={loadingRecords ? "Loading..." : `${records.length} record(s)`}>
+          <div className="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Equipment</th>
+                  <th>Number</th>
+                  <th>Site</th>
+                  <th>Certificate No.</th>
+                  <th>Expiry</th>
+                  <th>Status</th>
+                  <th>Attachment</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {records.map((record) => {
+                  const expiryStatus = calibrationStatusFromExpiry(record.expiry_date);
+                  return (
+                    <tr key={record.id}>
+                      <td><strong>{record.equipment_name || "-"}</strong></td>
+                      <td>{record.serial_number || "-"}</td>
+                      <td>{record.current_site_name || "-"}</td>
+                      <td>{record.certificate_number || "-"}</td>
+                      <td>{record.expiry_date || "-"}</td>
+                      <td><span className={`badge ${expiryStatus.className}`}>{expiryStatus.label}</span></td>
+                      <td>{record.attachment_ref || "-"}</td>
+                      <td>
+                        <button className="ghostButton" type="button" onClick={() => startEdit(record)}>
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {!records.length && (
+                  <tr>
+                    <td colSpan="8">
+                      <Empty text="No calibration records found." />
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+      </div>
+    </section>
+  );
+}
+
+function AssetMasterPage({ assets, allAssets, sites, auth, query, setQuery, loadData }) {
+  const emptyForm = {
+    equipment_name: "",
+    serial_number: "",
+    category: "",
+    manufacturer: "",
+    model: "",
+    current_site_id: "",
+    status: "Active",
+    remarks: "",
+  };
+
+  const [form, setForm] = useState(emptyForm);
+  const [editingAssetId, setEditingAssetId] = useState("");
+  const [savingAsset, setSavingAsset] = useState(false);
+  const [assetMessage, setAssetMessage] = useState("");
+
+  function updateAssetForm(field, value) {
+    setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function resetAssetForm() {
+    setForm(emptyForm);
+    setEditingAssetId("");
+    setAssetMessage("");
+  }
+
+  function startAssetEdit(asset) {
+    setEditingAssetId(String(pickId(asset)));
+    setForm({
+      equipment_name: asset?.equipment_name || "",
+      serial_number: asset?.serial_number || "",
+      category: asset?.category || "",
+      manufacturer: asset?.manufacturer || "",
+      model: asset?.model || "",
+      current_site_id: asset?.current_site_id ? String(asset.current_site_id) : "",
+      status: asset?.status || "Active",
+      remarks: asset?.remarks || "",
+    });
+    setAssetMessage("Editing selected asset.");
+  }
+
+  async function saveAsset(e) {
+    e.preventDefault();
+
+    if (!form.equipment_name.trim() || !form.serial_number.trim()) {
+      setAssetMessage("Equipment Name and Equipment Number are required.");
+      return;
+    }
+
+    setSavingAsset(true);
+    setAssetMessage("");
+
+    try {
+      const response = await fetch(
+        editingAssetId ? `${API_BASE}/api/assets/${editingAssetId}` : `${API_BASE}/api/assets`,
+        {
+          method: editingAssetId ? "PUT" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...createAuthHeaders(auth?.token),
+          },
+          body: JSON.stringify({
+            equipment_name: form.equipment_name.trim(),
+            serial_number: form.serial_number.trim(),
+            category: form.category.trim(),
+            manufacturer: form.manufacturer.trim(),
+            model: form.model.trim(),
+            current_site_id: form.current_site_id || null,
+            status: form.status,
+            remarks: form.remarks.trim(),
+          }),
+        }
+      );
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || result.error || "Unable to save asset.");
+      }
+
+      setAssetMessage(editingAssetId ? "Asset updated successfully." : "Asset added successfully.");
+      setForm(emptyForm);
+      setEditingAssetId("");
+      await loadData();
+    } catch (error) {
+      console.error(error);
+      setAssetMessage(error.message || "Unable to save asset.");
+    } finally {
+      setSavingAsset(false);
+    }
+  }
+
+  return (
+    <section className="pageGrid">
+      <div className="dashboardIntro">
+        <div>
+          <p className="eyebrow">Equipment Control</p>
+          <h3>Asset Master</h3>
+          <p>
+            Add, edit, and update equipment master records. Asset Code is removed; Equipment Number is the main identifier.
+          </p>
+        </div>
+        <div className="summaryChips">
+          <div className="summaryChip">
+            <span>Total</span>
+            <strong>{allAssets.length}</strong>
+          </div>
+          <div className="summaryChip">
+            <span>Shown</span>
+            <strong>{assets.length}</strong>
+          </div>
+          <div className="summaryChip">
+            <span>Sites</span>
+            <strong>{sites.filter(isSiteActive).length}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="twoColumn">
+        <Panel title={editingAssetId ? "Edit Equipment" : "Add New Equipment"} action="Editable asset master">
+          <form className="formGrid" onSubmit={saveAsset}>
+            <label>
+              Equipment Name
+              <input value={form.equipment_name} onChange={(e) => updateAssetForm("equipment_name", e.target.value)} placeholder="e.g. Pressure Gauge" />
+            </label>
+
+            <label>
+              Equipment Number / Serial
+              <input value={form.serial_number} onChange={(e) => updateAssetForm("serial_number", e.target.value)} placeholder="e.g. EQ-1001" />
+            </label>
+
+            <label>
+              Category
+              <input value={form.category} onChange={(e) => updateAssetForm("category", e.target.value)} placeholder="e.g. Calibration / Lifting / PM" />
+            </label>
+
+            <label>
+              Manufacturer
+              <input value={form.manufacturer} onChange={(e) => updateAssetForm("manufacturer", e.target.value)} placeholder="Manufacturer" />
+            </label>
+
+            <label>
+              Model
+              <input value={form.model} onChange={(e) => updateAssetForm("model", e.target.value)} placeholder="Model" />
+            </label>
+
+            <label>
+              Current Site
+              <select value={form.current_site_id} onChange={(e) => updateAssetForm("current_site_id", e.target.value)}>
+                <option value="">Select site</option>
+                {sites.filter(isSiteActive).map((site) => (
+                  <option key={pickId(site)} value={pickId(site)}>
+                    {getSiteName(site)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Status
+              <select value={form.status} onChange={(e) => updateAssetForm("status", e.target.value)}>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Under Maintenance">Under Maintenance</option>
+                <option value="Calibration Due">Calibration Due</option>
+                <option value="Damaged">Damaged</option>
+                <option value="Retired">Retired</option>
+              </select>
+            </label>
+
+            <label>
+              Remarks
+              <input value={form.remarks} onChange={(e) => updateAssetForm("remarks", e.target.value)} placeholder="Remarks" />
+            </label>
+
+            <div className="v2HeroActions wide">
+              <button className="primaryButton" type="submit" disabled={savingAsset}>
+                {savingAsset ? "Saving..." : editingAssetId ? "Update Equipment" : "Add Equipment"}
+              </button>
+              <button className="ghostButton" type="button" onClick={resetAssetForm}>
+                Clear
+              </button>
+            </div>
+
+            {assetMessage && <div className="messageBox wide">{assetMessage}</div>}
+          </form>
+        </Panel>
+
+        <Panel title="Asset Master Register" action={`${assets.length} asset(s)`}>
+          <input
+            className="searchInput"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Filter asset master..."
+          />
+
+          <div className="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Equipment</th>
+                  <th>Equipment No.</th>
+                  <th>Category</th>
+                  <th>Current Site</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {assets.map((asset) => (
+                  <tr key={pickId(asset)}>
+                    <td><strong>{getAssetName(asset)}</strong></td>
+                    <td>{getAssetSerial(asset)}</td>
+                    <td>{asset?.category || "-"}</td>
+                    <td>{getCurrentSiteName(asset, sites)}</td>
+                    <td><span className="badge success">{asset?.status || "Active"}</span></td>
+                    <td>
+                      <button className="ghostButton" type="button" onClick={() => startAssetEdit(asset)}>
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+
+                {!assets.length && (
+                  <tr>
+                    <td colSpan="6">
+                      <Empty text="No assets found." />
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+      </div>
+    </section>
+  );
+}
+
+function SiteMasterPage({ sites, auth, loadData }) {
+  const emptyForm = {
+    site_code: "",
+    site_name: "",
+    site_type: "Operational Site",
+    city: "",
+    country: "Saudi Arabia",
+    is_remote: "0",
+  };
+
+  const [form, setForm] = useState(emptyForm);
+  const [editingSiteId, setEditingSiteId] = useState("");
+  const [savingSite, setSavingSite] = useState(false);
+  const [siteMessage, setSiteMessage] = useState("");
+
+  const activeSites = sites.filter(isSiteActive);
+  const inactiveSites = sites.filter((site) => !isSiteActive(site));
+
+  function updateForm(field, value) {
+    setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function resetForm() {
+    setForm(emptyForm);
+    setEditingSiteId("");
+    setSiteMessage("");
+  }
+
+  function startEdit(site) {
+    setEditingSiteId(String(pickId(site)));
+    setForm({
+      site_code: site?.site_code || "",
+      site_name: site?.site_name || "",
+      site_type: site?.site_type || "Operational Site",
+      city: site?.city || "",
+      country: site?.country || "Saudi Arabia",
+      is_remote: isRemoteSite(site) ? "1" : "0",
+    });
+    setSiteMessage("Editing selected site.");
+  }
+
+  async function saveSite(e) {
+    e.preventDefault();
+
+    if (!form.site_code.trim() || !form.site_name.trim()) {
+      setSiteMessage("Site Code and Site Name are required.");
+      return;
+    }
+
+    setSavingSite(true);
+    setSiteMessage("");
+
+    try {
+      const response = await fetch(
+        editingSiteId ? `${API_BASE}/api/sites/${editingSiteId}` : `${API_BASE}/api/sites`,
+        {
+          method: editingSiteId ? "PUT" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...createAuthHeaders(auth?.token),
+          },
+          body: JSON.stringify({
+            ...form,
+            site_code: form.site_code.trim(),
+            site_name: form.site_name.trim(),
+            site_type: form.site_type.trim(),
+            city: form.city.trim(),
+            country: form.country.trim(),
+            is_remote: Number(form.is_remote),
+            is_active: 1,
+          }),
+        }
+      );
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || result.error || "Unable to save site.");
+      }
+
+      setSiteMessage(editingSiteId ? "Site updated successfully." : "Site added successfully.");
+      setForm(emptyForm);
+      setEditingSiteId("");
+      await loadData();
+    } catch (error) {
+      console.error(error);
+      setSiteMessage(error.message || "Unable to save site.");
+    } finally {
+      setSavingSite(false);
+    }
+  }
+
+  async function toggleSite(site) {
+    const siteId = pickId(site);
+    const active = isSiteActive(site);
+    const action = active ? "deactivate" : "activate";
+
+    if (!window.confirm(`Are you sure you want to ${action} this site?`)) {
+      return;
+    }
+
+    setSiteMessage("");
+
+    try {
+      const response = await fetch(`${API_BASE}/api/sites/${siteId}`, {
+        method: active ? "DELETE" : "PATCH",
+        headers: createAuthHeaders(auth?.token),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || result.error || "Unable to update site status.");
+      }
+
+      setSiteMessage(active ? "Site deactivated successfully." : "Site activated successfully.");
+      await loadData();
+    } catch (error) {
+      console.error(error);
+      setSiteMessage(error.message || "Unable to update site status.");
+    }
+  }
+
+  return (
+    <section className="pageGrid">
+      <div className="dashboardIntro">
+        <div>
+          <p className="eyebrow">Location Control</p>
+          <h3>Site Master</h3>
+          <p>
+            Add, edit, activate, and deactivate operational sites used in Asset Master and Movement tracking.
+          </p>
+        </div>
+        <div className="summaryChips">
+          <div className="summaryChip">
+            <span>Total</span>
+            <strong>{sites.length}</strong>
+          </div>
+          <div className="summaryChip">
+            <span>Active</span>
+            <strong>{activeSites.length}</strong>
+          </div>
+          <div className="summaryChip">
+            <span>Inactive</span>
+            <strong>{inactiveSites.length}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="twoColumn">
+        <Panel title={editingSiteId ? "Edit Site" : "Add New Site"} action="Editable master">
+          <form className="formGrid" onSubmit={saveSite}>
+            <label>
+              Site Code
+              <input value={form.site_code} onChange={(e) => updateForm("site_code", e.target.value)} placeholder="e.g. SDC" />
+            </label>
+
+            <label>
+              Site Name
+              <input value={form.site_name} onChange={(e) => updateForm("site_name", e.target.value)} placeholder="e.g. Main Warehouse" />
+            </label>
+
+            <label>
+              Site Type
+              <select value={form.site_type} onChange={(e) => updateForm("site_type", e.target.value)}>
+                <option value="Operational Site">Operational Site</option>
+                <option value="Client Site">Client Site</option>
+                <option value="Warehouse">Warehouse</option>
+                <option value="Yard">Yard</option>
+                <option value="Rig Site">Rig Site</option>
+                <option value="Workshop">Workshop</option>
+                <option value="Other">Other</option>
+              </select>
+            </label>
+
+            <label>
+              City
+              <input value={form.city} onChange={(e) => updateForm("city", e.target.value)} placeholder="City" />
+            </label>
+
+            <label>
+              Country
+              <input value={form.country} onChange={(e) => updateForm("country", e.target.value)} placeholder="Country" />
+            </label>
+
+            <label>
+              Remote / Normal
+              <select value={form.is_remote} onChange={(e) => updateForm("is_remote", e.target.value)}>
+                <option value="0">Normal Site</option>
+                <option value="1">Remote Site</option>
+              </select>
+            </label>
+
+            <div className="v2HeroActions wide">
+              <button className="primaryButton" type="submit" disabled={savingSite}>
+                {savingSite ? "Saving..." : editingSiteId ? "Update Site" : "Add Site"}
+              </button>
+              <button className="ghostButton" type="button" onClick={resetForm}>
+                Clear
+              </button>
+            </div>
+
+            {siteMessage && <div className="messageBox wide">{siteMessage}</div>}
+          </form>
+        </Panel>
+
+        <Panel title="Site Register" action={`${sites.length} site(s)`}>
+          <div className="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Site Code</th>
+                  <th>Site Name</th>
+                  <th>Type</th>
+                  <th>City</th>
+                  <th>Mode</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sites.map((site) => {
+                  const active = isSiteActive(site);
+                  return (
+                    <tr key={pickId(site)}>
+                      <td><strong>{site.site_code || "-"}</strong></td>
+                      <td>{getSiteName(site)}</td>
+                      <td>{site.site_type || "-"}</td>
+                      <td>{site.city || "-"}</td>
+                      <td>{isRemoteSite(site) ? "Remote" : "Normal"}</td>
+                      <td>
+                        <span className={`badge ${active ? "success" : "neutral"}`}>
+                          {active ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="v2HeroActions">
+                          <button className="ghostButton" type="button" onClick={() => startEdit(site)}>
+                            Edit
+                          </button>
+                          <button className="ghostButton" type="button" onClick={() => toggleSite(site)}>
+                            {active ? "Deactivate" : "Activate"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {!sites.length && (
+                  <tr>
+                    <td colSpan="7">
+                      <Empty text="No sites found." />
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+      </div>
+    </section>
+  );
+}
+
 function AssetTable({ assets, sites, compact = false }) {
   return (
     <div className="tableWrap">
@@ -1061,6 +2750,14 @@ function PlaceholderPage({ title, subtitle, cards }) {
 }
 
 export default App;
+
+
+
+
+
+
+
+
 
 
 
