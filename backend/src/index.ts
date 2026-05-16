@@ -676,6 +676,7 @@ export default {
       ).bind(
         body.asset_id,
         body.checklist_type,
+        body.checklist_name || null,
         body.checklist_date,
         body.result || null,
         body.performed_by || null,
@@ -738,6 +739,7 @@ export default {
       ).bind(
         body.asset_id,
         body.checklist_type,
+        body.checklist_name || null,
         body.checklist_date,
         body.result || null,
         body.performed_by || null,
@@ -1135,6 +1137,7 @@ export default {
     return notFound();
   },
 } satisfies ExportedHandler<Env>;
+
 
 
 
