@@ -3,6 +3,8 @@ import * as XLSX from "xlsx-js-style";
 import "./App.css";
 
 const API_BASE = "https://tmmd-srp-traceability-api.shamas-tmmd-srp.workers.dev";
+const APP_TIME_ZONE = "Asia/Dubai";
+const APP_TIME_ZONE_LABEL = "UAE Time";
 const AUTH_STORAGE_KEY = "tmmd_srp_auth";
 
 function getInitialAuth() {
@@ -82,12 +84,46 @@ function csvSafe(value) {
 }
 
 
+
+function formatUaeDateTime(value) {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: APP_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date).replace(",", "") + " UAE";
+}
+
+function formatUaeDate(value) {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: APP_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
 function xlsxDateStamp() {
-  return new Date().toLocaleDateString("en-GB", {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: APP_TIME_ZONE,
     day: "2-digit",
     month: "short",
     year: "numeric",
-  });
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date()).replace(",", "") + " UAE";
 }
 
 function daysBetweenToday(dateValue) {
@@ -636,7 +672,7 @@ function App() {
         item?.from_site_name || item?.from_site || "",
         item?.to_site_name || item?.to_site || "",
         item?.current_site_name || "",
-        item?.movement_datetime || item?.created_at || "",
+        formatUaeDateTime(item?.movement_datetime || item?.created_at) || "",
         item?.movement_type || "",
         item?.handed_over_by || "",
         item?.received_by || "",
@@ -1302,7 +1338,7 @@ function App() {
                       <span className="timelineDot" />
                       <div>
                         <strong>{item.from_site_name || item.from_site || item.from_location || "Previous Site"} → {item.to_site_name || item.to_site || item.to_location || "New Site"}</strong>
-                        <p>{item.movement_datetime || item.movement_date || item.created_at || "Date not available"}</p>
+                        <p>{formatUaeDateTime(item.movement_datetime || item.movement_date || item.created_at) || "Date not available"}</p>
                         <small>{item.remarks || item.notes || item.stayed_duration || (item.stayed_days_at_to_site ? `${item.stayed_days_at_to_site} day(s) at site` : "Movement recorded in audit trail")}</small>
                       </div>
                     </div>
@@ -3719,6 +3755,7 @@ function PlaceholderPage({ title, subtitle, cards }) {
 }
 
 export default App;
+
 
 
 
