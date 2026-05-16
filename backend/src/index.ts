@@ -290,7 +290,7 @@ export default {
           current_site_id,
           status,
           remarks
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         null,
         String(body.equipment_name).trim(),
@@ -670,7 +670,7 @@ export default {
           pm_frequency,
           attachment_ref,
           remarks
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         body.asset_id,
         body.checklist_type,
@@ -1021,7 +1021,7 @@ export default {
             handed_over_by,
             received_by,
             updated_by_user_id
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         ).bind(
           body.asset_id,
           fromSiteId,
@@ -1132,6 +1132,7 @@ export default {
     return notFound();
   },
 } satisfies ExportedHandler<Env>;
+
 
 
 

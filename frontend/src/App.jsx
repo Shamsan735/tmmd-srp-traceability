@@ -1258,7 +1258,7 @@ function PmMaintenancePage({ assets, sites, auth }) {
     checklist_date: "",
     performed_by: "",
     pm_frequency: "Monthly",
-    result: "Pass",
+    result: "Valid",
     next_due_date: "",
     attachment_ref: "",
     remarks: "",
@@ -1592,11 +1592,40 @@ function PmMaintenancePage({ assets, sites, auth }) {
             </label>
 
             <label>
-              Checklist Type
+              Checklist Category
               <select value={pmForm.checklist_type} onChange={(e) => updatePmForm("checklist_type", e.target.value)}>
                 <option value="PM">PM</option>
                 <option value="Inspection">Inspection</option>
                 <option value="NDT">NDT</option>
+              </select>
+            </label>
+
+            <label>
+              Checklist Name / Form
+              <select value={pmForm.checklist_name} onChange={(e) => updatePmForm("checklist_name", e.target.value)}>
+                <option value="F HSE 14 – Monthly Visual Inspection of Portable Fire Extinguishers">F HSE 14 – Monthly Visual Inspection of Portable Fire Extinguishers</option>
+                <option value="F HSE 16 – Weekly Vehicle Check List">F HSE 16 – Weekly Vehicle Check List</option>
+                <option value="F HSE 18 – Forklift Truck Operator Pre-Use Checks">F HSE 18 – Forklift Truck Operator Pre-Use Checks</option>
+                <option value="F STR 04 – Equipment Damage and Repair Report">F STR 04 – Equipment Damage and Repair Report</option>
+                <option value="F STR 05 – Preventive Maintenance – Electrical Grinder, Blower, Drilling Machine">F STR 05 – Preventive Maintenance – Electrical Grinder, Blower, Drilling Machine</option>
+                <option value="F STR 08 – Equipment Check List – Rig Site">F STR 08 – Equipment Check List – Rig Site</option>
+                <option value="F STR 16-A – Equipment Inspection – PM Checklist">F STR 16-A – Equipment Inspection – PM Checklist</option>
+                <option value="F STR 16-B – Equipment Inspection – PM Checklist">F STR 16-B – Equipment Inspection – PM Checklist</option>
+                <option value="F STR 16-C – Equipment Inspection – PM Checklist">F STR 16-C – Equipment Inspection – PM Checklist</option>
+                <option value="F STR 17 – Generator Checklist">F STR 17 – Generator Checklist</option>
+                <option value="F STR 18 – Shot Blasting Machine Checklist">F STR 18 – Shot Blasting Machine Checklist</option>
+                <option value="F STR 19 – Portable Air Compressor Daily Checklist">F STR 19 – Portable Air Compressor Daily Checklist</option>
+                <option value="F STR 20 – List of Service-Related Equipment">F STR 20 – List of Service-Related Equipment</option>
+                <option value="F STR 21 – Monitoring of Shelf-Life Sensitive Items">F STR 21 – Monitoring of Shelf-Life Sensitive Items</option>
+                <option value="F STR 22 – Portable Diesel or Petrol Generator Checklist">F STR 22 – Portable Diesel or Petrol Generator Checklist</option>
+                <option value="F STR 25 – High Pressure Water Jet Unit Checklist">F STR 25 – High Pressure Water Jet Unit Checklist</option>
+                <option value="F QMS 11 – Calibration Status of Inspection, Monitoring and Test Equipment">F QMS 11 – Calibration Status of Inspection, Monitoring and Test Equipment</option>
+                <option value="F RA 23 – Textile Item Maintenance Checklist">F RA 23 – Textile Item Maintenance Checklist</option>
+                <option value="F RA 24 – Metal Items and Helmet Maintenance Checklist">F RA 24 – Metal Items and Helmet Maintenance Checklist</option>
+                <option value="F STR 26 – List of Critical Spares">F STR 26 – List of Critical Spares</option>
+                <option value="F STR 27 – Equipment Usage History">F STR 27 – Equipment Usage History</option>
+                <option value="F STR 29 – Preventive Maintenance, Inspection and Test Plan">F STR 29 – Preventive Maintenance, Inspection and Test Plan</option>
+                <option value="F STR 30 – MSDS Assessment">F STR 30 – MSDS Assessment</option>
               </select>
             </label>
 
@@ -1624,6 +1653,7 @@ function PmMaintenancePage({ assets, sites, auth }) {
             <label>
               Result
               <select value={pmForm.result} onChange={(e) => updatePmForm("result", e.target.value)}>
+                <option value="Valid">Valid</option>
                 <option value="Pass">Pass</option>
                 <option value="Fail">Fail</option>
                 <option value="Observation">Observation</option>
@@ -1633,7 +1663,7 @@ function PmMaintenancePage({ assets, sites, auth }) {
 
             <label>
               Attachment Ref
-              <input value={pmForm.attachment_ref} onChange={(e) => updatePmForm("attachment_ref", e.target.value)} placeholder="File name / SharePoint ref later" />
+              <input value={pmForm.attachment_ref} onChange={(e) => updatePmForm("attachment_ref", e.target.value)} placeholder="Calibration certificate file name / SharePoint ref later" />
             </label>
 
             <label className="wide">
@@ -1763,7 +1793,7 @@ function PmMaintenancePage({ assets, sites, auth }) {
                     <td><strong>{record.equipment_name || "-"}</strong></td>
                     <td>{record.serial_number || "-"}</td>
                     <td>{record.current_site_name || "-"}</td>
-                    <td>{record.checklist_type || "-"}</td>
+                    <td>{record.checklist_name || record.checklist_type || "-"}</td>
                     <td>{record.checklist_date || "-"}</td>
                     <td>{record.pm_frequency || "-"}</td>
                     <td><span className={`badge ${record.result === "Fail" ? "danger" : record.result === "Pending" ? "warning" : "success"}`}>{record.result || "-"}</span></td>
@@ -1829,7 +1859,7 @@ function CalibrationPage({ assets, sites, auth }) {
     calibration_date: "",
     expiry_date: "",
     calibration_agency: "",
-    result: "Pass",
+    result: "Valid",
     attachment_ref: "",
     remarks: "",
   };
@@ -2093,6 +2123,7 @@ function CalibrationPage({ assets, sites, auth }) {
             <label>
               Result
               <select value={form.result} onChange={(e) => updateForm("result", e.target.value)}>
+                <option value="Valid">Valid</option>
                 <option value="Pass">Pass</option>
                 <option value="Fail">Fail</option>
                 <option value="Conditional Pass">Conditional Pass</option>
@@ -2101,8 +2132,8 @@ function CalibrationPage({ assets, sites, auth }) {
             </label>
 
             <label>
-              Certificate Attachment Ref
-              <input value={form.attachment_ref} onChange={(e) => updateForm("attachment_ref", e.target.value)} placeholder="File name / SharePoint ref later" />
+              Calibration Certificate Attachment
+              <input value={form.attachment_ref} onChange={(e) => updateForm("attachment_ref", e.target.value)} placeholder="Calibration certificate file name / SharePoint ref later" />
             </label>
 
             <label>
@@ -2750,6 +2781,7 @@ function PlaceholderPage({ title, subtitle, cards }) {
 }
 
 export default App;
+
 
 
 
