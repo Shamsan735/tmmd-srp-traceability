@@ -93,6 +93,37 @@ function downloadCsv(filename, rows) {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+
+function pmStatusFromDueDate(nextDueDate) {
+  if (!nextDueDate) return { label: "Not Applicable", className: "neutral", days: null };
+
+  const today = new Date();
+  const due = new Date(nextDueDate);
+
+  if (Number.isNaN(due.getTime())) {
+    return { label: "Not Applicable", className: "neutral", days: null };
+  }
+
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+
+  const days = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (days < 0) return { label: "PM Due", className: "danger", days };
+  if (days <= 10) return { label: "PM Due Soon", className: "warning", days };
+  return { label: "PM Valid", className: "success", days };
+}
+
+function getLatestPmRecord(records) {
+  if (!Array.isArray(records) || !records.length) return null;
+
+  return [...records].sort((a, b) => {
+    const left = new Date(a.checklist_date || a.created_at || 0).getTime();
+    const right = new Date(b.checklist_date || b.created_at || 0).getTime();
+    return right - left;
+  })[0];
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [assets, setAssets] = useState([]);
@@ -115,6 +146,7 @@ function App() {
   const [traceQuery, setTraceQuery] = useState("");
   const [traceAsset, setTraceAsset] = useState(null);
   const [traceHistory, setTraceHistory] = useState([]);
+  const [tracePmRecords, setTracePmRecords] = useState([]);
   const [traceLoading, setTraceLoading] = useState(false);
 
   async function loadData() {
@@ -487,6 +519,7 @@ function App() {
     setTraceLoading(true);
     setTraceAsset(null);
     setTraceHistory([]);
+    setTracePmRecords([]);
 
     try {
       const authHeaders = createAuthHeaders(auth.token);
@@ -524,6 +557,20 @@ function App() {
       const historyJson = await historyRes.json();
       setTraceAsset(historyJson?.data?.asset || asset);
       setTraceHistory(historyJson?.data?.movements || normalizeList(historyJson, "history"));
+
+      const pmRes = await fetch(`${API_BASE}/api/checklist-records?asset_id=${assetId}`, {
+        headers: authHeaders,
+      });
+
+      if (pmRes.status === 401) {
+        handleLogout();
+        return;
+      }
+
+      if (pmRes.ok) {
+        const pmJson = await pmRes.json().catch(() => ({}));
+        setTracePmRecords(normalizeList(pmJson, "checklist_records"));
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -966,7 +1013,20 @@ function App() {
                     <p>{getAssetSerial(traceAsset)}</p>
                     <div className="profileMeta">
                       <span>Current Location: {getCurrentSiteName(traceAsset, sites)}</span>
-                      <span>Days Until Expiry: {daysUntilExpiry(traceAsset) ?? "N/A"}</span>
+                      <span>Calibration: {daysUntilExpiry(traceAsset) ?? "N/A"} days</span>
+                      {(() => {
+                        const latestPm = getLatestPmRecord(tracePmRecords);
+                        const pmStatus = pmStatusFromDueDate(latestPm?.next_due_date);
+                        return (
+                          <>
+                            <span>PM Status: {pmStatus.label}</span>
+                            <span>Last PM: {latestPm?.checklist_date || "Not Available"}</span>
+                            <span>Next PM Due: {latestPm?.next_due_date || "Not Applicable"}</span>
+                            <span>PM Frequency: {latestPm?.pm_frequency || "Not Applicable"}</span>
+                            <span>Required Checklist: {latestPm?.checklist_name || "Not Applicable"}</span>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 ) : (
@@ -3392,6 +3452,8 @@ function PlaceholderPage({ title, subtitle, cards }) {
 }
 
 export default App;
+
+
 
 
 
