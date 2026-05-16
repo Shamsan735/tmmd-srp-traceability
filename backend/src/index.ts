@@ -615,6 +615,7 @@ export default {
           cr.id,
           cr.asset_id,
           cr.checklist_type,
+          cr.checklist_name,
           cr.checklist_date,
           cr.result,
           cr.performed_by,
@@ -663,6 +664,7 @@ export default {
         `INSERT INTO checklist_records (
           asset_id,
           checklist_type,
+          checklist_name,
           checklist_date,
           result,
           performed_by,
@@ -724,6 +726,7 @@ export default {
         `UPDATE checklist_records
          SET asset_id = ?,
              checklist_type = ?,
+             checklist_name = ?,
              checklist_date = ?,
              result = ?,
              performed_by = ?,
@@ -1132,6 +1135,7 @@ export default {
     return notFound();
   },
 } satisfies ExportedHandler<Env>;
+
 
 
 
