@@ -84,13 +84,70 @@ function daysUntilExpiry(asset) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function daysUntilDateValue(value) {
-  if (!value) return null;
+function normalizeDashboardDateValue(value) {
+  if (value === null || value === undefined) return "";
+
+  const convertExcelSerial = (serialValue) => {
+    const serial = Number(serialValue);
+    if (!Number.isFinite(serial) || serial < 25000 || serial > 70000) return "";
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    const parsed = new Date(excelEpoch.getTime() + serial * 24 * 60 * 60 * 1000);
+    return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString().slice(0, 10);
+  };
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return convertExcelSerial(value);
+  }
 
   const text = String(value).trim();
-  if (!text) return null;
+  if (!text) return "";
 
-  const parsedDate = new Date(text);
+  // Excel serials imported as +046416-01, +046052-01, +045873-01
+  const plusSerialMatch = text.match(/^\+?0*(\d{5})(?:-\d+)?$/);
+  if (plusSerialMatch) {
+    const converted = convertExcelSerial(plusSerialMatch[1]);
+    if (converted) return converted;
+  }
+
+  // Plain Excel serial text only if it is 5 digits and inside realistic Excel serial range
+  const plainSerialMatch = text.match(/^0*(\d{5})$/);
+  if (plainSerialMatch) {
+    const converted = convertExcelSerial(plainSerialMatch[1]);
+    if (converted) return converted;
+  }
+
+  // YYYY-MM-DD only
+  const ymd = text.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
+  if (ymd) {
+    const year = Number(ymd[1]);
+    if (year >= 2000 && year <= 2100) {
+      return `${ymd[1]}-${ymd[2].padStart(2, "0")}-${ymd[3].padStart(2, "0")}`;
+    }
+  }
+
+  // DD/MM/YYYY or DD-MM-YYYY
+  const dmy = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+  if (dmy) {
+    const yearText = dmy[3].length === 2 ? "20" + dmy[3] : dmy[3];
+    const year = Number(yearText);
+    if (year >= 2000 && year <= 2100) {
+      return `${yearText}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`;
+    }
+  }
+
+  // Avoid JS parsing equipment numbers like 2511-PG/01 as future dates
+  return "";
+}
+
+function daysUntilDateValue(value) {
+  const normalizedDate = normalizeDashboardDateValue(value);
+  if (!normalizedDate) return null;
+
+  const parsedDate = new Date(normalizedDate);
   if (Number.isNaN(parsedDate.getTime())) return null;
 
   const today = new Date();
@@ -98,7 +155,12 @@ function daysUntilDateValue(value) {
 
   parsedDate.setHours(0, 0, 0, 0);
 
-  return Math.ceil((parsedDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const days = Math.ceil((parsedDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+  // Client equipment max validity is around 3 years, so ignore impossible dates
+  if (!Number.isFinite(days) || days < -3650 || days > 2000) return null;
+
+  return days;
 }
 
 function getAssetCalibrationDays(asset, calibrationRecords) {
