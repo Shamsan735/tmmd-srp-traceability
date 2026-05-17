@@ -1559,13 +1559,17 @@ function ExcelImportCenter() {
     const equipmentCol = findColumn(headers, type === "service" ? ["Equipment Name", "Description"] : ["Description", "Equipment Name"]);
     const serialCol = findColumn(headers, type === "service" ? ["Equipment Serial No", "Serial No", "Unique Identification"] : ["Unique Identification", "Equipment Serial No", "Serial No"]);
     const locationCol = findColumn(headers, ["Location", "Site"]);
+    const remarksCol = findColumn(headers, ["Remarks", "Remark"]);
     const statusCol = findColumn(headers, ["Status"]);
     const makeCol = findColumn(headers, ["Make", "Manufacturer"]);
     const certificateCol = findColumn(headers, ["Certificate No", "Certificate Number"]);
     const dueDateCol = findColumn(headers, ["Due Date", "Expiry Date"]);
     const pmDateCol = findColumn(headers, ["Preventive Maintenance Done", "PM Done", "Date"]);
 
-    const locations = dataRows.map((row) => row[locationCol]);
+    const rawLocations = dataRows.map((row) => locationCol >= 0 ? row[locationCol] : "");
+    const rawUniqueLocations = uniqueCount(rawLocations);
+    const shouldUseRemarksAsLocation = type === "calibration" && remarksCol >= 0 && rawUniqueLocations <= 2;
+    const locations = dataRows.map((row) => shouldUseRemarksAsLocation ? row[remarksCol] : row[locationCol]);
     const serials = dataRows.map((row) => row[serialCol]);
     const statuses = dataRows.map((row) => String(row[statusCol] || "").trim());
 
@@ -1580,6 +1584,7 @@ function ExcelImportCenter() {
         serialCol >= 0 ? "Equipment Number / Serial" : null,
         makeCol >= 0 ? "Manufacturer / Make" : null,
         locationCol >= 0 ? "Location / Site" : null,
+        shouldUseRemarksAsLocation ? "Remarks as Actual Site / Store" : null,
         statusCol >= 0 ? "Status" : null,
         certificateCol >= 0 ? "Certificate Number" : null,
         dueDateCol >= 0 ? "Due Date / Expiry Date" : null,
@@ -1593,7 +1598,7 @@ function ExcelImportCenter() {
       sample: dataRows.slice(0, 5).map((row) => ({
         equipment: equipmentCol >= 0 ? row[equipmentCol] : "",
         serial: serialCol >= 0 ? row[serialCol] : "",
-        location: locationCol >= 0 ? row[locationCol] : "",
+        location: shouldUseRemarksAsLocation ? row[remarksCol] : (locationCol >= 0 ? row[locationCol] : ""),
         status: statusCol >= 0 ? row[statusCol] : "",
       })),
     };
@@ -3994,6 +3999,7 @@ function PlaceholderPage({ title, subtitle, cards }) {
 }
 
 export default App;
+
 
 
 
