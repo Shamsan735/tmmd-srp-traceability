@@ -1763,12 +1763,48 @@ function ExcelImportCenter() {
 
   function findColumn(headers, possibleNames) {
     const normalized = headers.map((header) => normalizeHeader(header));
+
     for (const name of possibleNames) {
       const needle = normalizeHeader(name);
-      const index = normalized.findIndex((header) => header === needle || header.includes(needle));
+      if (!needle) continue;
+
+      const needleParts = needle.split(" ").filter(Boolean);
+
+      const index = normalized.findIndex((header) => {
+        if (!header) return false;
+        if (header === needle) return true;
+        if (header.includes(needle)) return true;
+        if (needle.includes(header) && header.length >= 4) return true;
+        return needleParts.length > 1 && needleParts.every((part) => header.includes(part));
+      });
+
       if (index >= 0) return index;
     }
+
     return -1;
+  }
+
+  function normalizeImportDateValue(value) {
+    if (value === null || value === undefined) return "";
+
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      return value.toISOString().slice(0, 10);
+    }
+
+    if (typeof value === "number" && Number.isFinite(value)) {
+      // Excel serial date conversion
+      const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+      const parsed = new Date(excelEpoch.getTime() + value * 24 * 60 * 60 * 1000);
+      if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+    }
+
+    const text = String(value).trim();
+    if (!text) return "";
+
+    const parsed = new Date(text);
+    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+
+    return text;
   }
 
   function detectHeaderRow(rows) {
@@ -1807,9 +1843,43 @@ function ExcelImportCenter() {
     const remarksCol = findColumn(headers, ["Remarks", "Remark"]);
     const statusCol = findColumn(headers, ["Status"]);
     const makeCol = findColumn(headers, ["Make", "Manufacturer"]);
-    const certificateCol = findColumn(headers, ["Certificate No", "Certificate Number"]);
-    const dueDateCol = findColumn(headers, ["Due Date", "Expiry Date"]);
-    const pmDateCol = findColumn(headers, ["Preventive Maintenance Done", "PM Done", "Date"]);
+    const certificateCol = findColumn(headers, ["Certificate No", "Certificate Number", "Cert No", "Certificate"]);
+    const dueDateCol = findColumn(headers, [
+      "Due Date",
+      "Expiry Date",
+      "Expire Date",
+      "Expiration Date",
+      "Calibration Due Date",
+      "Calibration Expiry Date",
+      "Next Calibration Due Date",
+      "Next Due Date",
+      "Validity Date",
+      "Valid Until",
+      "Valid Upto",
+      "Certificate Expiry",
+      "Due"
+    ]);
+    const calibrationDateCol = findColumn(headers, [
+      "Calibration Date",
+      "Date of Calibration",
+      "Cal Date",
+      "Last Calibration Date",
+      "Calibration Done Date",
+      "Date Calibrated",
+      "Certificate Date",
+      "Issue Date"
+    ]);
+    const pmDateCol = type === "service" ? findColumn(headers, [
+      "Preventive Maintenance Done",
+      "Preventive Maintenance Date",
+      "PM Done",
+      "PM Date",
+      "PM Checklist Date",
+      "Maintenance Date",
+      "Inspection Date",
+      "Checklist Date",
+      "Date"
+    ]) : -1;
 
     const rawLocations = dataRows.map((row) => locationCol >= 0 ? row[locationCol] : "");
     const rawUniqueLocations = uniqueCount(rawLocations);
@@ -1832,8 +1902,9 @@ function ExcelImportCenter() {
         shouldUseRemarksAsLocation ? "Remarks as Actual Site / Store" : null,
         statusCol >= 0 ? "Status" : null,
         certificateCol >= 0 ? "Certificate Number" : null,
+        calibrationDateCol >= 0 ? "Calibration Date" : null,
         dueDateCol >= 0 ? "Due Date / Expiry Date" : null,
-        pmDateCol >= 0 ? "PM Date" : null,
+        pmDateCol >= 0 ? "PM Date / Checklist Date" : null,
       ].filter(Boolean),
       statusSummary: statuses.reduce((acc, status) => {
         const key = status || "Blank";
@@ -1870,9 +1941,9 @@ function ExcelImportCenter() {
         status: statusCol >= 0 ? row[statusCol] : "",
         manufacturer: makeCol >= 0 ? row[makeCol] : "",
         certificate_number: certificateCol >= 0 ? row[certificateCol] : "",
-        expiry_date: dueDateCol >= 0 ? row[dueDateCol] : "",
-        calibration_date: pmDateCol >= 0 ? row[pmDateCol] : "",
-        pm_date: pmDateCol >= 0 ? row[pmDateCol] : "",
+        expiry_date: normalizeImportDateValue(dueDateCol >= 0 ? row[dueDateCol] : ""),
+        calibration_date: normalizeImportDateValue(type === "calibration" && calibrationDateCol >= 0 ? row[calibrationDateCol] : ""),
+        pm_date: normalizeImportDateValue(type === "service" && pmDateCol >= 0 ? row[pmDateCol] : ""),
         remarks: remarksCol >= 0 ? row[remarksCol] : "",
         file_name: fileName,
       })).filter((item) => String(item.serial || "").trim() && String(item.equipment || "").trim() && String(item.location || "").trim()),
