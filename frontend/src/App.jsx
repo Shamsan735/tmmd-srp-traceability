@@ -810,13 +810,87 @@ function App() {
 
     downloadCsv("asset-repair-history-report.csv", rows);
   }
-  function exportPmChecklistCsv() {
-    const rows = [
-      ["Equipment Name", "Equipment Number", "Category", "Site", "Checklist Type", "Inspection Date", "Inspector Name", "PM Frequency", "Result", "Attachment", "Remarks"],
-      ["PM checklist records UI/API will be connected in the next module step.", "", "", "", "", "", "", "", "", "", ""],
-    ];
+  async function exportPmChecklistCsv() {
+    try {
+      const response = await fetch(\`${API_BASE}/api/checklist-records\`, {
+        headers: createAuthHeaders(auth.token),
+      });
 
-    downloadCsv("pm-checklist-report.csv", rows);
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        throw new Error(result.message || result.error || "Unable to load PM checklist records.");
+      }
+
+      const result = await response.json();
+      const allRecords = normalizeList(result, "checklist_records");
+
+      // PM report should show real PM / service checklist records only.
+      // Calibration master imported rows were inflating PM count, so exclude them from PM checklist report.
+      const pmRecords = allRecords.filter((record) => {
+        const checklistType = String(record.checklist_type || "").toLowerCase();
+        const checklistName = String(record.checklist_name || "").toLowerCase();
+        const sourceText = [
+          record.source,
+          record.file_name,
+          record.attachment_ref,
+          record.remarks,
+          record.certificate_type,
+        ].map((value) => String(value || "").toLowerCase()).join(" ");
+
+        const looksCalibrationMaster =
+          checklistName.includes("calibration master") ||
+          checklistName.includes("imported calibration") ||
+          sourceText.includes("master calibration") ||
+          sourceText.includes("calibration certificate");
+
+        if (looksCalibrationMaster) return false;
+        if (checklistType && checklistType !== "pm") return false;
+
+        return true;
+      });
+
+      const rows = [
+        [
+          "Equipment Name",
+          "Equipment Number",
+          "Category",
+          "Site",
+          "Checklist Type",
+          "Checklist Name",
+          "Inspection / PM Date",
+          "Inspector",
+          "PM Frequency",
+          "Result",
+          "Status",
+          "Attachment",
+          "Remarks",
+        ],
+        ...pmRecords.map((record) => [
+          record.equipment_name || record.asset_name || record.name || record.equipment || "",
+          record.serial_number || record.identification_number || record.equipment_no || record.tag_number || "",
+          record.category || record.asset_category || "",
+          record.current_site_name || record.site_name || record.current_location || record.location || "",
+          record.checklist_type || "PM",
+          record.checklist_name || "",
+          record.checklist_date || record.inspection_date || record.pm_date || "",
+          record.inspector_name || record.inspector || "",
+          record.pm_frequency || record.frequency || "",
+          record.result || "",
+          record.status || record.result || "",
+          record.attachment_ref || record.attachment || "",
+          record.remarks || "",
+        ]),
+      ];
+
+      if (!pmRecords.length) {
+        rows.push(["No PM checklist records found", "", "", "", "", "", "", "", "", "", "", "", ""]);
+      }
+
+      downloadCsv("pm-checklist-report.csv", rows);
+    } catch (error) {
+      console.error(error);
+      alert(error.message || "Unable to download PM checklist report.");
+    }
   }
   async function saveMovement(e) {
     e.preventDefault();
