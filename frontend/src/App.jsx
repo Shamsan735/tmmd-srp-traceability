@@ -1511,6 +1511,7 @@ function ExcelImportCenter() {
   const [servicePreview, setServicePreview] = useState(null);
   const [calibrationPreview, setCalibrationPreview] = useState(null);
   const [importMessage, setImportMessage] = useState("");
+  const [applyingImport, setApplyingImport] = useState(false);
 
   function normalizeHeader(value) {
     return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -1618,6 +1619,19 @@ function ExcelImportCenter() {
           newSitesDetected: uniqueCount(locationValues),
         };
       })(),
+      records: dataRows.map((row) => ({
+        equipment: equipmentCol >= 0 ? row[equipmentCol] : "",
+        serial: serialCol >= 0 ? row[serialCol] : "",
+        location: shouldUseRemarksAsLocation ? row[remarksCol] : (locationCol >= 0 ? row[locationCol] : ""),
+        status: statusCol >= 0 ? row[statusCol] : "",
+        manufacturer: makeCol >= 0 ? row[makeCol] : "",
+        certificate_number: certificateCol >= 0 ? row[certificateCol] : "",
+        expiry_date: dueDateCol >= 0 ? row[dueDateCol] : "",
+        calibration_date: pmDateCol >= 0 ? row[pmDateCol] : "",
+        pm_date: pmDateCol >= 0 ? row[pmDateCol] : "",
+        remarks: remarksCol >= 0 ? row[remarksCol] : "",
+        file_name: fileName,
+      })).filter((item) => String(item.serial || "").trim() && String(item.equipment || "").trim() && String(item.location || "").trim()),
       sample: dataRows.slice(0, 5).map((row) => ({
         equipment: equipmentCol >= 0 ? row[equipmentCol] : "",
         serial: serialCol >= 0 ? row[serialCol] : "",
@@ -1651,7 +1665,51 @@ function ExcelImportCenter() {
     }
   }
 
-  function PreviewCard({ preview }) {
+  async function applyExcelImport(type, preview) {
+    if (!preview?.records?.length) {
+      setImportMessage("No valid records available for import.");
+      return;
+    }
+
+    const confirmed = window.confirm(`Apply ${preview.type} import to live database? This will create/update sites, assets and related records.`);
+
+    if (!confirmed) return;
+
+    setApplyingImport(true);
+    setImportMessage("Applying import to live database...");
+
+    try {
+      const response = await fetch(`${API_BASE}/api/import/excel`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...createAuthHeaders(getInitialAuth()?.token),
+        },
+        body: JSON.stringify({
+          type,
+          records: preview.records,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || result.error || "Import failed.");
+      }
+
+      const summary = result.summary || {};
+      setImportMessage(
+        `Import applied successfully. Received: ${summary.received || 0}, Skipped: ${summary.skipped || 0}, Assets: ${summary.assetsCreatedOrUpdated || 0}, PM: ${summary.pmRecordsCreated || 0}, Calibration: ${summary.calibrationRecordsCreated || 0}`
+      );
+    } catch (error) {
+      console.error(error);
+      setImportMessage(error.message || "Unable to apply import.");
+    } finally {
+      setApplyingImport(false);
+    }
+  }
+
+  function PreviewCard({ preview, type }) {
     if (!preview) return <div className="messageBox wide">No preview generated yet.</div>;
 
     return (
@@ -1676,6 +1734,17 @@ function ExcelImportCenter() {
         {Object.entries(preview.statusSummary).slice(0, 8).map(([key, value]) => (
           <p key={key}>{key}: {value}</p>
         ))}
+
+        <div className="v2HeroActions">
+          <button
+            className="primaryButton"
+            type="button"
+            disabled={applyingImport || !preview.records?.length || preview.validation?.missingEquipmentNumber || preview.validation?.blankLocation}
+            onClick={() => applyExcelImport(type, preview)}
+          >
+            {applyingImport ? "Applying..." : "Apply Import"}
+          </button>
+        </div>
 
         <h4>Sample Rows</h4>
         <div className="tableWrap">
@@ -1725,7 +1794,7 @@ function ExcelImportCenter() {
               Upload Service Related Products Excel
               <input type="file" accept=".xlsx,.xls" onChange={(e) => readExcelFile(e.target.files?.[0], "service")} />
             </label>
-            <PreviewCard preview={servicePreview} />
+            <PreviewCard preview={servicePreview} type="service" />
           </div>
         </Panel>
 
@@ -1735,7 +1804,7 @@ function ExcelImportCenter() {
               Upload Master Calibration Log Excel
               <input type="file" accept=".xlsx,.xls" onChange={(e) => readExcelFile(e.target.files?.[0], "calibration")} />
             </label>
-            <PreviewCard preview={calibrationPreview} />
+            <PreviewCard preview={calibrationPreview} type="calibration" />
           </div>
         </Panel>
       </div>
@@ -4031,6 +4100,7 @@ function PlaceholderPage({ title, subtitle, cards }) {
 }
 
 export default App;
+
 
 
 

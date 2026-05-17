@@ -105,6 +105,135 @@ function isRoleAccessAllowed(request: Request, env: Env) {
   return false;
 }
 
+
+function normalizeImportText(value: any) {
+  return String(value || "").trim();
+}
+
+function makeSiteCode(siteName: string) {
+  const base = normalizeImportText(siteName)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 24);
+
+  return base || "SITE";
+}
+
+function normalizeImportDate(value: any) {
+  const text = normalizeImportText(value);
+  if (!text) return null;
+
+  const date = new Date(text);
+  if (!Number.isNaN(date.getTime())) {
+    return date.toISOString().slice(0, 10);
+  }
+
+  return text;
+}
+
+async function getOrCreateImportSite(env: Env, siteNameRaw: any) {
+  const siteName = normalizeImportText(siteNameRaw);
+
+  if (!siteName) return null;
+
+  const existingByName: any = await env.DB.prepare(
+    "SELECT id FROM sites WHERE lower(site_name) = lower(?) LIMIT 1"
+  ).bind(siteName).first();
+
+  if (existingByName?.id) return existingByName.id;
+
+  let siteCode = makeSiteCode(siteName);
+  let finalCode = siteCode;
+  let counter = 1;
+
+  while (true) {
+    const existingCode: any = await env.DB.prepare(
+      "SELECT id FROM sites WHERE site_code = ? LIMIT 1"
+    ).bind(finalCode).first();
+
+    if (!existingCode) break;
+
+    counter += 1;
+    finalCode = `${siteCode}-${counter}`.slice(0, 30);
+  }
+
+  const result: any = await env.DB.prepare(
+    `INSERT INTO sites (site_code, site_name, site_type, city, country, is_remote, is_active)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
+  ).bind(finalCode, siteName, "Imported", null, "UAE", 0, 1).run();
+
+  return result.meta?.last_row_id || null;
+}
+
+async function upsertImportAsset(env: Env, record: any, siteId: any) {
+  const serial = normalizeImportText(record.serial);
+  const equipmentName = normalizeImportText(record.equipment);
+  const manufacturer = normalizeImportText(record.manufacturer);
+  const model = normalizeImportText(record.model);
+  const category = normalizeImportText(record.category);
+  const status = normalizeImportText(record.asset_status || record.status) || "Active";
+  const remarks = normalizeImportText(record.remarks);
+
+  if (!serial || !equipmentName) return null;
+
+  const existing: any = await env.DB.prepare(
+    "SELECT id FROM assets WHERE serial_number = ? LIMIT 1"
+  ).bind(serial).first();
+
+  if (existing?.id) {
+    await env.DB.prepare(
+      `UPDATE assets
+       SET equipment_name = ?,
+           manufacturer = ?,
+           model = ?,
+           category = ?,
+           current_site_id = ?,
+           status = ?,
+           remarks = ?,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`
+    ).bind(
+      equipmentName,
+      manufacturer || null,
+      model || null,
+      category || null,
+      siteId || null,
+      status,
+      remarks || null,
+      existing.id
+    ).run();
+
+    return existing.id;
+  }
+
+  const result: any = await env.DB.prepare(
+    `INSERT INTO assets (
+      asset_code,
+      equipment_name,
+      serial_number,
+      manufacturer,
+      model,
+      category,
+      current_site_id,
+      status,
+      remarks
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(
+    null,
+    equipmentName,
+    serial,
+    manufacturer || null,
+    model || null,
+    category || null,
+    siteId || null,
+    status,
+    remarks || null
+  ).run();
+
+  return result.meta?.last_row_id || null;
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (request.method === "OPTIONS") {
@@ -175,6 +304,135 @@ export default {
         success: false,
         message: "Access denied for this role.",
       }, 403);
+    }
+
+
+    if (path === "/api/import/excel" && request.method === "POST") {
+      const role = getRoleFromRequest(request, env);
+
+      if (role !== "Admin") {
+        return json({
+          success: false,
+          message: "Only Admin can apply Excel import.",
+        }, 403);
+      }
+
+      const body: any = await readJson(request);
+      const importType = normalizeImportText(body?.type);
+      const records: any[] = Array.isArray(body?.records) ? body.records : [];
+
+      if (!["service", "calibration"].includes(importType)) {
+        return json({ success: false, message: "Invalid import type." }, 400);
+      }
+
+      if (!records.length) {
+        return json({ success: false, message: "No import records received." }, 400);
+      }
+
+      const summary = {
+        received: records.length,
+        skipped: 0,
+        sitesCreatedOrMatched: 0,
+        assetsCreatedOrUpdated: 0,
+        pmRecordsCreated: 0,
+        calibrationRecordsCreated: 0,
+      };
+
+      for (const record of records) {
+        const serial = normalizeImportText(record.serial);
+        const equipment = normalizeImportText(record.equipment);
+        const location = normalizeImportText(record.location);
+
+        if (!serial || !equipment || !location) {
+          summary.skipped += 1;
+          continue;
+        }
+
+        const siteId = await getOrCreateImportSite(env, location);
+        if (siteId) summary.sitesCreatedOrMatched += 1;
+
+        const assetId = await upsertImportAsset(env, record, siteId);
+        if (!assetId) {
+          summary.skipped += 1;
+          continue;
+        }
+
+        summary.assetsCreatedOrUpdated += 1;
+
+        if (importType === "service") {
+          const pmDate = normalizeImportDate(record.pm_date) || new Date().toISOString().slice(0, 10);
+          const resultText = normalizeImportText(record.status) || "Imported";
+
+          await env.DB.prepare(
+            `INSERT INTO checklist_records (
+              asset_id,
+              checklist_type,
+              checklist_name,
+              checklist_date,
+              result,
+              performed_by,
+              next_due_date,
+              pm_frequency,
+              attachment_ref,
+              remarks
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          ).bind(
+            assetId,
+            "PM",
+            "Imported Service Related Products",
+            pmDate,
+            resultText,
+            "Excel Import",
+            null,
+            null,
+            normalizeImportText(record.file_name) || null,
+            normalizeImportText(record.remarks) || null
+          ).run();
+
+          summary.pmRecordsCreated += 1;
+        }
+
+        if (importType === "calibration") {
+          await env.DB.prepare(
+            `INSERT INTO calibration_records (
+              asset_id,
+              certificate_type,
+              certificate_number,
+              calibration_date,
+              expiry_date,
+              calibration_agency,
+              result,
+              status,
+              attachment_ref,
+              remarks
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          ).bind(
+            assetId,
+            normalizeImportText(record.certificate_type) || "Calibration Certificate",
+            normalizeImportText(record.certificate_number) || null,
+            normalizeImportDate(record.calibration_date),
+            normalizeImportDate(record.expiry_date),
+            normalizeImportText(record.calibration_agency) || null,
+            normalizeImportText(record.status) || null,
+            normalizeImportText(record.status) || null,
+            normalizeImportText(record.file_name) || null,
+            normalizeImportText(record.remarks) || location || null
+          ).run();
+
+          summary.calibrationRecordsCreated += 1;
+        }
+      }
+
+      await env.DB.prepare(
+        `INSERT INTO audit_logs (user_id, action, module, record_id, new_value)
+         VALUES (?, 'APPLY_EXCEL_IMPORT', 'excel_import', ?, ?)`
+      ).bind(null, null, JSON.stringify({ importType, summary })).run();
+
+      return json({
+        success: true,
+        message: "Excel import applied successfully.",
+        summary,
+      });
     }
 
     if (path === "/api/sites" && request.method === "GET") {
