@@ -1064,7 +1064,7 @@ export default {
         LEFT JOIN sites s ON a.current_site_id = s.id
         ${whereSql}
         ORDER BY date(c.expiry_date) ASC, c.id DESC
-        LIMIT 500`
+        LIMIT 5000`
       ).bind(...binds).all();
 
       return json({ success: true, data: results });
@@ -1233,7 +1233,7 @@ export default {
         LEFT JOIN sites s ON a.current_site_id = s.id
         ${whereSql}
         ORDER BY date(cr.checklist_date) DESC, cr.id DESC
-        LIMIT 500`
+        LIMIT 5000`
       ).bind(...binds).all();
 
       return json({ success: true, data: results });
@@ -1406,7 +1406,7 @@ export default {
         LEFT JOIN sites s ON r.site_id = s.id
         ${whereSql}
         ORDER BY datetime(r.repair_date) DESC, r.id DESC
-        LIMIT 500`
+        LIMIT 5000`
       ).bind(...binds).all();
 
       return json({ success: true, data: results });
@@ -1584,7 +1584,7 @@ export default {
         LEFT JOIN sites ts ON m.to_site_id = ts.id
         LEFT JOIN sites cs ON a.current_site_id = cs.id
         ORDER BY datetime(m.movement_datetime) DESC, m.id DESC
-        LIMIT 500`
+        LIMIT 5000`
       ).all();
 
       return json({ success: true, data: results });
