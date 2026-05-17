@@ -949,19 +949,6 @@ function App() {
 
     const pmDashboard = buildPmDashboardDataFromChecklistRecords(assets, checklistRecords);
 
-  const calibrationTrackedItems = dashboardData.valid.length + dashboardData.warning.length + dashboardData.critical.length;
-  const calibrationHealthPercent = calibrationTrackedItems
-    ? Math.round((dashboardData.valid.length / calibrationTrackedItems) * 100)
-    : 0;
-
-  const pmTrackedItems = pmDashboard.valid.length + pmDashboard.dueSoon.length + pmDashboard.overdue.length;
-  const pmCompliancePercent = pmTrackedItems
-    ? Math.round((pmDashboard.valid.length / pmTrackedItems) * 100)
-    : 0;
-
-  const overallAssetReadinessScore = Math.round(
-    ((calibrationHealthPercent || 0) + (pmCompliancePercent || 0)) / 2
-  );
     const pmValid = pmDashboard.valid;
     const pmDueSoon = pmDashboard.dueSoon;
     const pmOverdue = pmDashboard.overdue;
@@ -1110,6 +1097,25 @@ function App() {
 
     downloadCsv("asset-master-report.csv", rows);
   }
+
+
+  /* SAFE DASHBOARD READINESS METRICS */
+  const calibrationTrackedItems = dashboardData.valid.length + dashboardData.warning.length + dashboardData.critical.length;
+  const calibrationHealthPercent = calibrationTrackedItems
+    ? Math.round((dashboardData.valid.length / calibrationTrackedItems) * 100)
+    : 0;
+
+  const pmTrackedItems = dashboardData.pmDashboard
+    ? dashboardData.pmDashboard.valid.length + dashboardData.pmDashboard.dueSoon.length + dashboardData.pmDashboard.overdue.length
+    : 0;
+
+  const pmCompliancePercent = pmTrackedItems && dashboardData.pmDashboard
+    ? Math.round((dashboardData.pmDashboard.valid.length / pmTrackedItems) * 100)
+    : 0;
+
+  const overallAssetReadinessScore = Math.round(
+    ((calibrationHealthPercent || 0) + (pmCompliancePercent || 0)) / 2
+  );
 
   function exportExpiryCsv() {
     const expiryRows = assets
