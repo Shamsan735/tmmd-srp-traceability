@@ -410,6 +410,70 @@ function buildPmDashboardDataFromChecklistRecords(assets, checklistRecords) {
   return result;
 }
 
+function getCurrentCalibrationRecords(records) {
+  const list = Array.isArray(records) ? records : normalizeList(records, "calibration_records");
+  const latestByAsset = new Map();
+
+  function safeDateTime(value) {
+    if (!value) return 0;
+
+    let normalized = "";
+    if (typeof normalizeDashboardDateValue === "function") {
+      normalized = normalizeDashboardDateValue(value);
+    }
+
+    if (!normalized) {
+      normalized = String(value || "").trim();
+    }
+
+    const parsed = new Date(normalized);
+    const time = parsed.getTime();
+
+    return Number.isFinite(time) ? time : 0;
+  }
+
+  list.forEach((record) => {
+    const key = String(
+      record?.asset_id ||
+      record?.serial_number ||
+      record?.identification_number ||
+      record?.equipment_no ||
+      record?.tag_number ||
+      [record?.equipment_name, record?.certificate_number].filter(Boolean).join("::")
+    ).trim();
+
+    if (!key) return;
+
+    const existing = latestByAsset.get(key);
+
+    const recordTime =
+      safeDateTime(record?.expiry_date) ||
+      safeDateTime(record?.calibration_date) ||
+      safeDateTime(record?.created_at) ||
+      Number(record?.id || 0);
+
+    const existingTime = existing
+      ? (
+          safeDateTime(existing?.expiry_date) ||
+          safeDateTime(existing?.calibration_date) ||
+          safeDateTime(existing?.created_at) ||
+          Number(existing?.id || 0)
+        )
+      : -1;
+
+    if (!existing || recordTime >= existingTime) {
+      latestByAsset.set(key, record);
+    }
+  });
+
+  return Array.from(latestByAsset.values())
+    .sort((a, b) => {
+      const left = safeDateTime(a?.expiry_date) || Number(a?.id || 0);
+      const right = safeDateTime(b?.expiry_date) || Number(b?.id || 0);
+      return left - right;
+    });
+}
+
 function csvSafe(value) {
   const text = value === null || value === undefined ? "" : String(value);
   return `"${text.replace(/"/g, '""')}"`;
@@ -872,7 +936,7 @@ function App() {
       return;
     }
 
-    const records = normalizeList(result, "calibration_records");
+    const records = getCurrentCalibrationRecords(normalizeList(result, "calibration_records"));
 
     const rows = [
       ["Calibration Status of Inspection, Monitoring & Test Equipments-UAE"],
@@ -4021,7 +4085,7 @@ function CalibrationPage({ assets, sites, auth }) {
         throw new Error(result.message || result.error || "Unable to load calibration records.");
       }
 
-      setRecords(normalizeList(result, "calibration_records"));
+      setRecords(getCurrentCalibrationRecords(normalizeList(result, "calibration_records")));
     } catch (error) {
       console.error(error);
       setMessage(error.message || "Unable to load calibration records.");
