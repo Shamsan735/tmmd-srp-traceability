@@ -1787,19 +1787,47 @@ function ExcelImportCenter() {
   function normalizeImportDateValue(value) {
     if (value === null || value === undefined) return "";
 
+    const convertExcelSerial = (serialValue) => {
+      const serial = Number(serialValue);
+      if (!Number.isFinite(serial) || serial <= 0) return "";
+      const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+      const parsed = new Date(excelEpoch.getTime() + serial * 24 * 60 * 60 * 1000);
+      return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString().slice(0, 10);
+    };
+
     if (value instanceof Date && !Number.isNaN(value.getTime())) {
       return value.toISOString().slice(0, 10);
     }
 
     if (typeof value === "number" && Number.isFinite(value)) {
-      // Excel serial date conversion
-      const excelEpoch = new Date(Date.UTC(1899, 11, 30));
-      const parsed = new Date(excelEpoch.getTime() + value * 24 * 60 * 60 * 1000);
-      if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+      return convertExcelSerial(value);
     }
 
     const text = String(value).trim();
     if (!text) return "";
+
+    // Handles imported Excel serials shown like +046052-01, +046416-01, +045873-01
+    const plusSerialMatch = text.match(/^\+?0*(\d{4,6})(?:-\d+)?$/);
+    if (plusSerialMatch) {
+      const converted = convertExcelSerial(plusSerialMatch[1]);
+      if (converted) return converted;
+    }
+
+    // Handles plain serial text like 46052 / 046052
+    const plainSerialMatch = text.match(/^0*(\d{4,6})$/);
+    if (plainSerialMatch) {
+      const converted = convertExcelSerial(plainSerialMatch[1]);
+      if (converted) return converted;
+    }
+
+    // Handles dd/mm/yyyy, dd-mm-yyyy
+    const dmy = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+    if (dmy) {
+      const day = dmy[1].padStart(2, "0");
+      const month = dmy[2].padStart(2, "0");
+      const year = dmy[3].length === 2 ? "20" + dmy[3] : dmy[3];
+      return `${year}-${month}-${day}`;
+    }
 
     const parsed = new Date(text);
     if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
