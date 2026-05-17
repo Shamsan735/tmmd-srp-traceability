@@ -1208,45 +1208,39 @@ export default {
 
     if (path === "/api/checklist-records" && request.method === "GET") {
       const assetId = url.searchParams.get("asset_id");
+      const mode = url.searchParams.get("mode") || "current";
 
-      const filters: string[] = [];
-      const binds: any[] = [];
+      if (assetId || mode === "history") {
+        const sql =
+          "SELECT " +
+          "cr.id, cr.asset_id, cr.checklist_type, cr.checklist_name, cr.checklist_date, cr.result, cr.performed_by, cr.next_due_date, cr.pm_frequency, cr.attachment_ref, cr.attachment_id, cr.remarks, cr.created_at, " +
+          "a.equipment_name, a.serial_number, a.category, a.current_site_id, s.site_name AS current_site_name, s.site_code AS current_site_code " +
+          "FROM checklist_records cr " +
+          "LEFT JOIN assets a ON cr.asset_id = a.id " +
+          "LEFT JOIN sites s ON a.current_site_id = s.id " +
+          "WHERE cr.checklist_type = 'PM' " +
+          (assetId ? "AND cr.asset_id = ? " : "") +
+          "ORDER BY date(COALESCE(cr.next_due_date, cr.checklist_date, cr.created_at)) DESC, cr.id DESC LIMIT 5000";
 
-      if (assetId) {
-        filters.push("cr.asset_id = ?");
-        binds.push(assetId);
+        const statement = env.DB.prepare(sql);
+        const { results } = assetId ? await statement.bind(assetId).all() : await statement.all();
+
+        return json({ success: true, data: results });
       }
 
-      const whereSql = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
-
       const { results } = await env.DB.prepare(
-        `SELECT
-          cr.id,
-          cr.asset_id,
-          cr.checklist_type,
-          cr.checklist_name,
-          cr.checklist_date,
-          cr.result,
-          cr.performed_by,
-          cr.next_due_date,
-          cr.pm_frequency,
-          cr.attachment_ref,
-          cr.attachment_id,
-          cr.remarks,
-          cr.created_at,
-          a.equipment_name,
-          a.serial_number,
-          a.category,
-          a.current_site_id,
-          s.site_name AS current_site_name,
-          s.site_code AS current_site_code
-        FROM checklist_records cr
-        LEFT JOIN assets a ON cr.asset_id = a.id
-        LEFT JOIN sites s ON a.current_site_id = s.id
-        ${whereSql}
-        ORDER BY date(cr.checklist_date) DESC, cr.id DESC
-        LIMIT 5000`
-      ).bind(...binds).all();
+        "SELECT * FROM ( " +
+        "SELECT " +
+        "cr.id, cr.asset_id, cr.checklist_type, cr.checklist_name, cr.checklist_date, cr.result, cr.performed_by, cr.next_due_date, cr.pm_frequency, cr.attachment_ref, cr.attachment_id, cr.remarks, cr.created_at, " +
+        "a.equipment_name, a.serial_number, a.category, a.current_site_id, s.site_name AS current_site_name, s.site_code AS current_site_code, " +
+        "ROW_NUMBER() OVER (PARTITION BY lower(trim(COALESCE(a.serial_number, 'asset-' || cr.asset_id))) ORDER BY date(COALESCE(cr.next_due_date, cr.checklist_date, cr.created_at)) DESC, cr.id DESC) AS rn " +
+        "FROM checklist_records cr " +
+        "LEFT JOIN assets a ON cr.asset_id = a.id " +
+        "LEFT JOIN sites s ON a.current_site_id = s.id " +
+        "WHERE cr.checklist_type = 'PM' " +
+        ") WHERE rn = 1 " +
+        "ORDER BY date(COALESCE(next_due_date, checklist_date, created_at)) DESC, id DESC LIMIT 5000"
+      ).all();
 
       return json({ success: true, data: results });
     }

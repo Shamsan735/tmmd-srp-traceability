@@ -5112,7 +5112,15 @@ function SiteMasterPage({ sites, auth, loadData }) {
                   return (
                     <tr key={pickId(site)}>
                       <td><strong>{site.site_code || "-"}</strong></td>
-                      <td>{getSiteName(site)}</td>
+                      <td>
+                      <strong>{getSiteName(site)}</strong>
+                      <div className="siteMasterActionForceV2">
+                        <button className="siteActionBtnV2" type="button" onClick={() => startEdit(site)}>Edit</button>
+                        <button className="siteActionBtnV2 danger" type="button" onClick={() => toggleSiteStatus(site)}>
+                          {isSiteActive(site) ? "Deactivate" : "Reactivate"}
+                        </button>
+                      </div>
+                    </td>
                       <td>{site.site_type || "-"}</td>
                       <td>{site.city || "-"}</td>
                       <td>{isRemoteSite(site) ? "Remote" : "Normal"}</td>

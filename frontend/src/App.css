@@ -6436,3 +6436,53 @@ th {
 td:has(.siteMasterInlineActions) {
   min-width: 220px !important;
 }
+
+
+/* === SITE ACTION FORCE V2 === */
+.siteMasterActionForceV2 {
+  display: flex !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  margin-top: 8px !important;
+  align-items: center !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.siteActionBtnV2 {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 28px !important;
+  border: 1px solid #D9E2EC !important;
+  background: #FFFFFF !important;
+  color: #163A5F !important;
+  border-radius: 999px !important;
+  padding: 5px 12px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  box-shadow: 0 6px 14px rgba(16, 42, 67, 0.08) !important;
+}
+
+.siteActionBtnV2:hover {
+  border-color: #14B8A6 !important;
+  color: #0F766E !important;
+}
+
+.siteActionBtnV2.danger {
+  color: #B42318 !important;
+  border-color: #FECACA !important;
+  background: #FFF7F7 !important;
+}
+
+.siteActionBtnV2.danger:hover {
+  border-color: #F97066 !important;
+  color: #912018 !important;
+}
+
+td:has(.siteMasterActionForceV2) {
+  min-width: 245px !important;
+  vertical-align: top !important;
+}
