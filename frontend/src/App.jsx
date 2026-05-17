@@ -1019,30 +1019,36 @@ function App() {
   }
 
   function exportExpiryCsv() {
-    const rows = [
-      ["Equipment Name", "Equipment Number", "Current Site", "Days Until Expiry", "Expiry Status"],
-      ...assets
-        .map((asset) => {
-          const days = daysUntilExpiry(asset);
-          const status = statusFromDays(days);
-          return [
+    const expiryRows = assets
+      .map((asset) => {
+        const days = getAssetCalibrationDays(asset, calibrationRecords);
+        const status = statusFromDays(days);
+
+        return {
+          days,
+          row: [
             getAssetName(asset),
             getAssetSerial(asset),
             getCurrentSiteName(asset, sites),
             days === null ? "N/A" : days,
             status.label,
-          ];
-        })
-        .sort((a, b) => {
-          const left = Number(a[3]);
-          const right = Number(b[3]);
-          if (Number.isNaN(left)) return 1;
-          if (Number.isNaN(right)) return -1;
-          return left - right;
-        }),
+          ],
+        };
+      })
+      .filter((item) => item.days !== null && item.days <= 30)
+      .sort((a, b) => a.days - b.days)
+      .map((item) => item.row);
+
+    const rows = [
+      ["Equipment Name", "Equipment Number", "Current Site", "Days Until Expiry", "Expiry Status"],
+      ...expiryRows,
     ];
 
-    downloadCsv("expiry-visibility-report.csv", rows);
+    if (!expiryRows.length) {
+      rows.push(["No assets found within 30 days expiry range", "", "", "", ""]);
+    }
+
+    downloadCsv("expiry-visibility-under-30-days.csv", rows);
   }
 
   function exportLocationCsv() {
@@ -1904,7 +1910,7 @@ function App() {
               <div className="reportCard">
                 <span>02</span>
                 <h4>Expiry Visibility Report</h4>
-                <p>Sorted expiry report showing critical, warning, valid, and no-expiry equipment records.</p>
+                <p>Shows only calibration/expiry records due within 30 days, sorted by urgency.</p>
                 <button className="primaryButton" onClick={exportExpiryCsv}>Download CSV</button>
               </div>
 
