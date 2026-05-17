@@ -1508,8 +1508,164 @@ function App() {
 
 
 function ExcelImportCenter() {
-  const [serviceFile, setServiceFile] = useState("");
-  const [calibrationFile, setCalibrationFile] = useState("");
+  const [servicePreview, setServicePreview] = useState(null);
+  const [calibrationPreview, setCalibrationPreview] = useState(null);
+  const [importMessage, setImportMessage] = useState("");
+
+  function normalizeHeader(value) {
+    return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  }
+
+  function findColumn(headers, possibleNames) {
+    const normalized = headers.map((header) => normalizeHeader(header));
+    for (const name of possibleNames) {
+      const needle = normalizeHeader(name);
+      const index = normalized.findIndex((header) => header === needle || header.includes(needle));
+      if (index >= 0) return index;
+    }
+    return -1;
+  }
+
+  function detectHeaderRow(rows) {
+    let bestIndex = 0;
+    let bestScore = -1;
+
+    rows.slice(0, 20).forEach((row, index) => {
+      const text = row.map((cell) => normalizeHeader(cell)).join(" ");
+      let score = 0;
+      ["equipment", "serial", "location", "status", "unique", "identification", "description", "certificate", "due date"].forEach((word) => {
+        if (text.includes(word)) score += 1;
+      });
+      if (score > bestScore) {
+        bestScore = score;
+        bestIndex = index;
+      }
+    });
+
+    return bestIndex;
+  }
+
+  function uniqueCount(values) {
+    return new Set(values.filter((value) => String(value || "").trim())).size;
+  }
+
+  function buildPreview(rows, type, fileName) {
+    if (!rows.length) return null;
+
+    const headerIndex = detectHeaderRow(rows);
+    const headers = rows[headerIndex] || [];
+    const dataRows = rows.slice(headerIndex + 1).filter((row) => row.some((cell) => String(cell || "").trim()));
+
+    const equipmentCol = findColumn(headers, type === "service" ? ["Equipment Name", "Description"] : ["Description", "Equipment Name"]);
+    const serialCol = findColumn(headers, type === "service" ? ["Equipment Serial No", "Serial No", "Unique Identification"] : ["Unique Identification", "Equipment Serial No", "Serial No"]);
+    const locationCol = findColumn(headers, ["Location", "Site"]);
+    const statusCol = findColumn(headers, ["Status"]);
+    const makeCol = findColumn(headers, ["Make", "Manufacturer"]);
+    const certificateCol = findColumn(headers, ["Certificate No", "Certificate Number"]);
+    const dueDateCol = findColumn(headers, ["Due Date", "Expiry Date"]);
+    const pmDateCol = findColumn(headers, ["Preventive Maintenance Done", "PM Done", "Date"]);
+
+    const locations = dataRows.map((row) => row[locationCol]);
+    const serials = dataRows.map((row) => row[serialCol]);
+    const statuses = dataRows.map((row) => String(row[statusCol] || "").trim());
+
+    return {
+      fileName,
+      type: type === "service" ? "Service Related Products" : "Master Calibration Log",
+      totalRows: dataRows.length,
+      uniqueEquipment: uniqueCount(serials),
+      uniqueSites: uniqueCount(locations),
+      mappedFields: [
+        equipmentCol >= 0 ? "Equipment Name" : null,
+        serialCol >= 0 ? "Equipment Number / Serial" : null,
+        makeCol >= 0 ? "Manufacturer / Make" : null,
+        locationCol >= 0 ? "Location / Site" : null,
+        statusCol >= 0 ? "Status" : null,
+        certificateCol >= 0 ? "Certificate Number" : null,
+        dueDateCol >= 0 ? "Due Date / Expiry Date" : null,
+        pmDateCol >= 0 ? "PM Date" : null,
+      ].filter(Boolean),
+      statusSummary: statuses.reduce((acc, status) => {
+        const key = status || "Blank";
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {}),
+      sample: dataRows.slice(0, 5).map((row) => ({
+        equipment: equipmentCol >= 0 ? row[equipmentCol] : "",
+        serial: serialCol >= 0 ? row[serialCol] : "",
+        location: locationCol >= 0 ? row[locationCol] : "",
+        status: statusCol >= 0 ? row[statusCol] : "",
+      })),
+    };
+  }
+
+  async function readExcelFile(file, type) {
+    if (!file) return;
+    setImportMessage("Reading Excel file...");
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+      const preview = buildPreview(rows, type, file.name);
+
+      if (type === "service") {
+        setServicePreview(preview);
+      } else {
+        setCalibrationPreview(preview);
+      }
+
+      setImportMessage("Excel preview generated successfully. Database not updated yet.");
+    } catch (error) {
+      console.error(error);
+      setImportMessage(error.message || "Unable to read Excel file.");
+    }
+  }
+
+  function PreviewCard({ preview }) {
+    if (!preview) return <div className="messageBox wide">No preview generated yet.</div>;
+
+    return (
+      <div className="importGuide wide">
+        <h4>{preview.type} Preview</h4>
+        <p><strong>File:</strong> {preview.fileName}</p>
+        <p><strong>Total Rows:</strong> {preview.totalRows}</p>
+        <p><strong>Unique Equipment:</strong> {preview.uniqueEquipment}</p>
+        <p><strong>Unique Sites / Locations:</strong> {preview.uniqueSites}</p>
+        <p><strong>Mapped Fields:</strong> {preview.mappedFields.join(", ") || "No fields detected"}</p>
+
+        <h4>Status Summary</h4>
+        {Object.entries(preview.statusSummary).slice(0, 8).map(([key, value]) => (
+          <p key={key}>{key}: {value}</p>
+        ))}
+
+        <h4>Sample Rows</h4>
+        <div className="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Equipment</th>
+                <th>Number</th>
+                <th>Location</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {preview.sample.map((item, index) => (
+                <tr key={index}>
+                  <td>{item.equipment || "-"}</td>
+                  <td>{item.serial || "-"}</td>
+                  <td>{item.location || "-"}</td>
+                  <td>{item.status || "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section className="pageGrid">
@@ -1517,13 +1673,11 @@ function ExcelImportCenter() {
         <div>
           <p className="eyebrow">Admin Only</p>
           <h3>Excel Import Center</h3>
-          <p>
-            Safe import staging area for client Excel files. Upload files here for review and mapping before applying data to the live system.
-          </p>
+          <p>Safe Excel import preview. Files are read in browser and no live database overwrite happens.</p>
         </div>
         <div className="summaryChips">
           <div className="summaryChip"><span>Status</span><strong>Preview Mode</strong></div>
-          <div className="summaryChip"><span>Risk</span><strong>Safe</strong></div>
+          <div className="summaryChip"><span>Database</span><strong>Not Updated</strong></div>
         </div>
       </div>
 
@@ -1532,26 +1686,9 @@ function ExcelImportCenter() {
           <div className="formGrid">
             <label className="wide">
               Upload Service Related Products Excel
-              <input
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={(e) => setServiceFile(e.target.files?.[0]?.name || "")}
-              />
+              <input type="file" accept=".xlsx,.xls" onChange={(e) => readExcelFile(e.target.files?.[0], "service")} />
             </label>
-
-            <div className="messageBox wide">
-              {serviceFile ? `Selected: ${serviceFile}` : "No file selected yet."}
-            </div>
-
-            <div className="importGuide wide">
-              <h4>Expected Mapping</h4>
-              <p>Equipment Name ? Asset Master</p>
-              <p>Equipment Serial No. ? Equipment Number</p>
-              <p>Make ? Manufacturer</p>
-              <p>Location ? Site Master / Current Site</p>
-              <p>Date - Preventive Maintenance Done ? Last PM Date</p>
-              <p>Status ? PM / Asset condition</p>
-            </div>
+            <PreviewCard preview={servicePreview} />
           </div>
         </Panel>
 
@@ -1559,37 +1696,18 @@ function ExcelImportCenter() {
           <div className="formGrid">
             <label className="wide">
               Upload Master Calibration Log Excel
-              <input
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={(e) => setCalibrationFile(e.target.files?.[0]?.name || "")}
-              />
+              <input type="file" accept=".xlsx,.xls" onChange={(e) => readExcelFile(e.target.files?.[0], "calibration")} />
             </label>
-
-            <div className="messageBox wide">
-              {calibrationFile ? `Selected: ${calibrationFile}` : "No file selected yet."}
-            </div>
-
-            <div className="importGuide wide">
-              <h4>Expected Mapping</h4>
-              <p>Unique Identification ? Equipment Number</p>
-              <p>Description ? Equipment Name</p>
-              <p>Model / Manufacturer ? Asset Master</p>
-              <p>Certificate No. ? Certificate Number</p>
-              <p>Date ? Calibration Date</p>
-              <p>Due Date ? Expiry Date</p>
-              <p>Location ? Site / Current Location</p>
-              <p>Status / Days ? Calibration Status</p>
-            </div>
+            <PreviewCard preview={calibrationPreview} />
           </div>
         </Panel>
       </div>
 
       <Panel title="Import Safety Note" action="Recommended workflow">
         <div className="importGuide">
-          <p><strong>Current Mode:</strong> Preview and mapping only. No live database overwrite.</p>
-          <p><strong>Next Step:</strong> After client confirms mapping, enable Apply Import to update Site Master, Asset Master, PM Records, Calibration Records, Dashboard and Reports.</p>
-          <p><strong>Reason:</strong> This prevents wrong import due to duplicate equipment numbers, inconsistent site names, old calibration records, or rejected equipment items.</p>
+          <p><strong>Current Mode:</strong> Preview only. No live database overwrite.</p>
+          <p><strong>Next Step:</strong> After client confirms mapping, Apply Import can be enabled.</p>
+          <p><strong>Status:</strong> {importMessage || "Upload an Excel file to generate preview."}</p>
         </div>
       </Panel>
     </section>
