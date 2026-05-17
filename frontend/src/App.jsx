@@ -1176,7 +1176,7 @@ function App() {
             </div>
 
             <div className="v2MainGrid">
-              <Panel title="Asset Health Intelligence" action="Risk score">
+              <Panel title="Calibration Health Intelligence" action="Expiry risk">
                 <div className="v2HealthWrap">
                   <div
                     className="v2HealthRing"
@@ -1193,9 +1193,10 @@ function App() {
                   </div>
 
                   <div className="v2HealthMetrics">
-                    <div><span className="v2Dot success" /><p>Valid Assets</p><strong>{dashboardData.valid.length}</strong></div>
-                    <div><span className="v2Dot warning" /><p>Warning Assets</p><strong>{dashboardData.warning.length}</strong></div>
-                    <div><span className="v2Dot danger" /><p>Critical Assets</p><strong>{dashboardData.critical.length}</strong></div>
+                    <div><span className="v2Dot success" /><p>Valid Calibration</p><strong>{dashboardData.valid.length}</strong></div>
+                    <div><span className="v2Dot warning" /><p>Warning Calibration</p><strong>{dashboardData.warning.length}</strong></div>
+                    <div><span className="v2Dot danger" /><p>Critical Calibration</p><strong>{dashboardData.critical.length}</strong></div>
+                    <div><span className="v2Dot neutral" /><p>Missing Calibration</p><strong>{dashboardData.noExpiry?.length || 0}</strong></div>
                   </div>
                 </div>
               </Panel>
