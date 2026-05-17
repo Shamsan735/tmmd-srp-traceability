@@ -8508,3 +8508,65 @@ td:has(.siteMasterActionForceV2) {
 }
 
 /* === FINAL MANAGEMENT DASHBOARD CLEANUP END === */
+
+/* === PM NEEDS REVIEW ACCURACY UI START === */
+
+/* PM Accuracy UI: Valid + Due Soon + Overdue + Needs Review */
+
+.dashboardV2 .panel:has(.v2ActionCenter) {
+  height: 326px !important;
+  min-height: 326px !important;
+  max-height: 326px !important;
+}
+
+.dashboardV2 .v2ActionCenter {
+  height: 274px !important;
+  min-height: 274px !important;
+  padding: 10px 12px !important;
+  gap: 6px !important;
+}
+
+.dashboardV2 .v2ActionAlert {
+  height: 61px !important;
+  min-height: 61px !important;
+  padding: 8px 10px !important;
+  border-radius: 13px !important;
+  grid-template-columns: 6px 1fr 58px !important;
+  gap: 9px !important;
+}
+
+.dashboardV2 .v2ActionAlert::before {
+  height: 39px !important;
+}
+
+.dashboardV2 .v2ActionAlert small {
+  font-size: 9.5px !important;
+  letter-spacing: 0.08em !important;
+}
+
+.dashboardV2 .v2ActionAlert p {
+  font-size: 9.8px !important;
+  line-height: 1.22 !important;
+}
+
+.dashboardV2 .v2ActionAlert strong {
+  min-width: 50px !important;
+  min-height: 39px !important;
+  font-size: 20px !important;
+  border-radius: 12px !important;
+}
+
+.dashboardV2 .v2ActionAlert.review::before {
+  background: #64748B !important;
+}
+
+.dashboardV2 .v2ActionAlert.review::after {
+  background: #64748B !important;
+  opacity: 0.12 !important;
+}
+
+.dashboardV2 .v2ActionAlert.review small {
+  color: #475569 !important;
+}
+
+/* === PM NEEDS REVIEW ACCURACY UI END === */
