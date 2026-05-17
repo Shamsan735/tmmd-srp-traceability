@@ -270,6 +270,146 @@ function getCleanPmRecords(records) {
   });
 }
 
+function getDashboardPmFrequencyMonths(value) {
+  const text = String(value || "").toLowerCase().trim();
+
+  if (!text) return null;
+  if (text.includes("monthly")) return 1;
+  if (text.includes("quarter") || text.includes("3 month") || text.includes("3-month")) return 3;
+  if (text.includes("6 month") || text.includes("6-month")) return 6;
+  if (text.includes("annual") || text.includes("year") || text.includes("12 month")) return 12;
+
+  const numeric = Number(text.replace(/[^0-9.]/g, ""));
+  if (Number.isFinite(numeric) && numeric > 0 && numeric <= 36) return Math.round(numeric);
+
+  return null;
+}
+
+function addDashboardMonths(dateValue, months) {
+  if (!dateValue || !months) return "";
+
+  const normalizedDate = typeof normalizeDashboardDateValue === "function"
+    ? normalizeDashboardDateValue(dateValue)
+    : String(dateValue || "");
+
+  if (!normalizedDate) return "";
+
+  const date = new Date(normalizedDate);
+  if (Number.isNaN(date.getTime())) return "";
+
+  date.setMonth(date.getMonth() + months);
+  return date.toISOString().slice(0, 10);
+}
+
+function isDashboardCalibrationGeneratedPmRecord(record) {
+  const checklistName = String(record?.checklist_name || "").toLowerCase();
+  const attachment = String(record?.attachment_ref || record?.file_name || "").toLowerCase();
+  const remarks = String(record?.remarks || "").toLowerCase();
+
+  const helperResult = typeof isCalibrationGeneratedPmRecord === "function"
+    ? isCalibrationGeneratedPmRecord(record)
+    : false;
+
+  return helperResult ||
+    checklistName.includes("imported calibration master") ||
+    checklistName.includes("calibration master pm") ||
+    attachment.includes("master calibration") ||
+    remarks.includes("master calibration");
+}
+
+function getPmDashboardRecordDueDate(record) {
+  if (record?.next_due_date) return record.next_due_date;
+
+  const checklistDate = record?.checklist_date || record?.inspection_date || record?.pm_date;
+  const months = getDashboardPmFrequencyMonths(record?.pm_frequency || record?.frequency);
+
+  return addDashboardMonths(checklistDate, months);
+}
+
+function getPmDashboardRecordStatus(record) {
+  const existing = String(record?.result || record?.status || "").toLowerCase();
+
+  if (existing.includes("overdue")) return "overdue";
+  if (existing.includes("due within")) return "dueSoon";
+
+  const nextDueDate = getPmDashboardRecordDueDate(record);
+  const days = daysUntilDateValue(nextDueDate);
+
+  if (days !== null && days < 0) return "overdue";
+  if (days !== null && days <= 10) return "dueSoon";
+  if (days !== null && days > 10) return "valid";
+
+  if (existing.includes("valid") || existing.includes("completed") || existing.includes("pass") || existing.includes("ok")) {
+    return "valid";
+  }
+
+  return "missing";
+}
+
+function getPmRecordSortScore(record) {
+  const dateValue =
+    getPmDashboardRecordDueDate(record) ||
+    record?.checklist_date ||
+    record?.inspection_date ||
+    record?.pm_date ||
+    record?.created_at;
+
+  const normalizedDate = typeof normalizeDashboardDateValue === "function"
+    ? normalizeDashboardDateValue(dateValue)
+    : String(dateValue || "");
+
+  const time = normalizedDate ? new Date(normalizedDate).getTime() : 0;
+  return Number.isFinite(time) ? time : 0;
+}
+
+function buildPmDashboardDataFromChecklistRecords(assets, checklistRecords) {
+  const rawRecords = Array.isArray(checklistRecords) ? checklistRecords : [];
+
+  const cleanRecords = rawRecords.filter((record) => {
+    const checklistType = String(record?.checklist_type || "").toLowerCase();
+    if (checklistType && checklistType !== "pm") return false;
+    return !isDashboardCalibrationGeneratedPmRecord(record);
+  });
+
+  const latestRecordByAsset = new Map();
+
+  cleanRecords.forEach((record) => {
+    const assetId = String(record?.asset_id || "").trim();
+    if (!assetId) return;
+
+    const existing = latestRecordByAsset.get(assetId);
+    if (!existing || getPmRecordSortScore(record) >= getPmRecordSortScore(existing)) {
+      latestRecordByAsset.set(assetId, record);
+    }
+  });
+
+  const result = {
+    valid: [],
+    dueSoon: [],
+    overdue: [],
+    missing: [],
+  };
+
+  assets.forEach((asset) => {
+    const assetId = String(pickId(asset) ?? asset?.id ?? "").trim();
+    const record = latestRecordByAsset.get(assetId);
+
+    if (!record) {
+      result.missing.push(asset);
+      return;
+    }
+
+    const status = getPmDashboardRecordStatus(record);
+
+    if (status === "overdue") result.overdue.push(asset);
+    else if (status === "dueSoon") result.dueSoon.push(asset);
+    else if (status === "valid") result.valid.push(asset);
+    else result.missing.push(asset);
+  });
+
+  return result;
+}
+
 function csvSafe(value) {
   const text = value === null || value === undefined ? "" : String(value);
   return `"${text.replace(/"/g, '""')}"`;
@@ -476,6 +616,7 @@ function App() {
   const [assets, setAssets] = useState([]);
   const [sites, setSites] = useState([]);
   const [calibrationRecords, setCalibrationRecords] = useState([]);
+  const [checklistRecords, setChecklistRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [apiStatus, setApiStatus] = useState("Checking");
   const [auth, setAuth] = useState(getInitialAuth);
@@ -511,14 +652,15 @@ function App() {
     try {
       const authHeaders = createAuthHeaders(auth.token);
 
-      const [healthRes, assetsRes, sitesRes, calibrationRes] = await Promise.all([
+      const [healthRes, assetsRes, sitesRes, calibrationRes, checklistRes] = await Promise.all([
         fetch(`${API_BASE}/api/health`),
         fetch(`${API_BASE}/api/assets`, { headers: authHeaders }),
         fetch(`${API_BASE}/api/sites`, { headers: authHeaders }),
         fetch(`${API_BASE}/api/calibration-records`, { headers: authHeaders }),
+        fetch(`${API_BASE}/api/checklist-records`, { headers: authHeaders }),
       ]);
 
-      if (assetsRes.status === 401 || sitesRes.status === 401 || calibrationRes.status === 401) {
+      if (assetsRes.status === 401 || sitesRes.status === 401 || calibrationRes.status === 401 || checklistRes.status === 401) {
         throw new Error("Unauthorized");
       }
 
@@ -527,10 +669,12 @@ function App() {
       const assetsJson = await assetsRes.json();
       const sitesJson = await sitesRes.json();
       const calibrationJson = calibrationRes.ok ? await calibrationRes.json() : { calibration_records: [] };
+      const checklistJson = checklistRes.ok ? await checklistRes.json() : { checklist_records: [] };
 
       setAssets(normalizeList(assetsJson, "assets"));
       setSites(normalizeList(sitesJson, "sites"));
       setCalibrationRecords(normalizeList(calibrationJson, "calibration_records"));
+      setChecklistRecords(normalizeList(checklistJson, "checklist_records"));
     } catch (error) {
       console.error(error);
       setApiStatus("Offline");
@@ -582,6 +726,8 @@ function App() {
     setAuth(null);
     setAssets([]);
     setSites([]);
+    setCalibrationRecords([]);
+    setChecklistRecords([]);
     setActiveTab("dashboard");
   }
 
@@ -658,10 +804,11 @@ function App() {
 
     const noExpiry = assets.filter((asset) => getAssetCalibrationDays(asset, calibrationRecords) === null);
 
-    const pmValid = assets.filter((asset) => getPmDashboardStatus(asset) === "valid");
-    const pmDueSoon = assets.filter((asset) => getPmDashboardStatus(asset) === "dueSoon");
-    const pmOverdue = assets.filter((asset) => getPmDashboardStatus(asset) === "overdue");
-    const pmMissing = assets.filter((asset) => getPmDashboardStatus(asset) === "missing");
+    const pmDashboard = buildPmDashboardDataFromChecklistRecords(assets, checklistRecords);
+    const pmValid = pmDashboard.valid;
+    const pmDueSoon = pmDashboard.dueSoon;
+    const pmOverdue = pmDashboard.overdue;
+    const pmMissing = pmDashboard.missing;
 
     const distributionMap = new Map();
     assets.forEach((asset) => {
@@ -679,7 +826,7 @@ function App() {
       .sort((a, b) => a.dashboardExpiryDays - b.dashboardExpiryDays);
 
     return { critical, warning, valid, noExpiry, distribution, expirySorted, pmValid, pmDueSoon, pmOverdue, pmMissing };
-  }, [assets, sites, calibrationRecords]);
+  }, [assets, sites, calibrationRecords, checklistRecords]);
 
 
 
