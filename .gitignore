@@ -8,3 +8,11 @@ frontend/.wrangler/
 .env
 .env.local
 .DS_Store
+# Local backups and patch scripts
+*.backup-*
+*.cjs
+safety-backups/
+site-master-check.txt
+site-master-structure.txt
+rc -File *
+t *
