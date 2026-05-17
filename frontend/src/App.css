@@ -7538,3 +7538,238 @@ td:has(.siteMasterActionForceV2) {
 }
 
 /* === ENTERPRISE DASHBOARD FINAL UI SAFE END === */
+
+/* === FINAL COMPACT MANAGEMENT DASHBOARD START === */
+
+/* Final compact dashboard polish - UI only */
+
+.dashboardV2 {
+  gap: 10px !important;
+}
+
+/* Reduce big page feel */
+.dashboardV2 .v2Hero {
+  min-height: 104px !important;
+  padding: 13px 16px !important;
+  grid-template-columns: minmax(0, 1.65fr) minmax(260px, 0.55fr) !important;
+  border-radius: 18px !important;
+}
+
+.dashboardV2 .v2Hero h3 {
+  font-size: clamp(19px, 1.8vw, 25px) !important;
+}
+
+.dashboardV2 .v2Hero p {
+  font-size: 11.5px !important;
+  max-width: 720px !important;
+  line-height: 1.38 !important;
+}
+
+.dashboardV2 .v2HeroActions {
+  margin-top: 10px !important;
+}
+
+.dashboardV2 .v2HeroActions button {
+  min-height: 31px !important;
+  padding: 0 12px !important;
+  font-size: 11px !important;
+}
+
+.dashboardV2 .v2SyncCard {
+  padding: 12px 13px !important;
+  border-radius: 16px !important;
+  gap: 6px !important;
+}
+
+.dashboardV2 .v2SyncCard strong {
+  font-size: 21px !important;
+}
+
+.dashboardV2 .v2SyncCard p {
+  font-size: 10.6px !important;
+  line-height: 1.35 !important;
+}
+
+.dashboardV2 .v2SyncPills span {
+  padding: 4px 8px !important;
+  font-size: 9.5px !important;
+}
+
+/* KPI strip tighter */
+.dashboardV2 .v2KpiGrid {
+  gap: 10px !important;
+}
+
+.dashboardV2 .v2KpiCard,
+.dashboardV2 .v2KpiGrid > * {
+  height: 76px !important;
+  min-height: 76px !important;
+  padding: 10px 12px !important;
+  border-radius: 15px !important;
+}
+
+.dashboardV2 .v2KpiCard strong,
+.dashboardV2 .v2KpiGrid > * strong {
+  font-size: 23px !important;
+  margin-top: 5px !important;
+}
+
+.dashboardV2 .v2KpiCard p,
+.dashboardV2 .v2KpiGrid > * p {
+  font-size: 10px !important;
+  margin-top: 4px !important;
+}
+
+/* Three cards more software-like */
+.dashboardV2 .v2MainGrid {
+  gap: 10px !important;
+}
+
+.dashboardV2 .v2MainGrid > .panel,
+.dashboardV2 .panel:has(.v2HealthWrap),
+.dashboardV2 .panel:has(.v2ActionCenter),
+.dashboardV2 .panel:has(.overallReadinessCard) {
+  min-height: 318px !important;
+  max-height: 338px !important;
+  border-radius: 18px !important;
+}
+
+.dashboardV2 .v2MainGrid .panelHeader,
+.dashboardV2 .panel:has(.v2HealthWrap) .panelHeader,
+.dashboardV2 .panel:has(.v2ActionCenter) .panelHeader,
+.dashboardV2 .panel:has(.overallReadinessCard) .panelHeader {
+  min-height: 54px !important;
+  padding: 11px 13px !important;
+}
+
+.dashboardV2 .v2MainGrid .panelHeader h3,
+.dashboardV2 .panel:has(.v2HealthWrap) .panelHeader h3,
+.dashboardV2 .panel:has(.v2ActionCenter) .panelHeader h3,
+.dashboardV2 .panel:has(.overallReadinessCard) .panelHeader h3 {
+  font-size: 14px !important;
+}
+
+/* Calibration card compact */
+.dashboardV2 .v2HealthWrap {
+  height: 250px !important;
+  padding: 13px !important;
+  grid-template-columns: 118px minmax(0, 1fr) !important;
+}
+
+.dashboardV2 .v2HealthRing {
+  width: 112px !important;
+  height: 112px !important;
+}
+
+.dashboardV2 .v2HealthRing > div {
+  width: 76px !important;
+  height: 76px !important;
+}
+
+.dashboardV2 .v2HealthRing strong {
+  font-size: 22px !important;
+}
+
+.dashboardV2 .v2HealthMetrics > div {
+  min-height: 42px !important;
+  padding: 8px 10px !important;
+}
+
+.dashboardV2 .v2HealthMetrics p {
+  font-size: 10.7px !important;
+}
+
+.dashboardV2 .v2HealthMetrics strong {
+  font-size: 15px !important;
+}
+
+/* PM card compact */
+.dashboardV2 .v2ActionCenter {
+  padding: 12px !important;
+  gap: 8px !important;
+}
+
+.dashboardV2 .v2ActionAlert {
+  min-height: 64px !important;
+  padding: 10px 11px !important;
+  border-radius: 14px !important;
+  grid-template-columns: 6px minmax(0, 1fr) 58px !important;
+}
+
+.dashboardV2 .v2ActionAlert::before {
+  height: 40px !important;
+  width: 6px !important;
+}
+
+.dashboardV2 .v2ActionAlert small {
+  font-size: 10px !important;
+}
+
+.dashboardV2 .v2ActionAlert p {
+  font-size: 10.5px !important;
+  line-height: 1.28 !important;
+}
+
+.dashboardV2 .v2ActionAlert strong {
+  min-width: 50px !important;
+  min-height: 42px !important;
+  font-size: 22px !important;
+  border-radius: 12px !important;
+}
+
+/* Readiness card compact */
+.dashboardV2 .overallReadinessCard {
+  height: 250px !important;
+  padding: 13px !important;
+  grid-template-columns: 112px minmax(0, 1fr) !important;
+  gap: 12px !important;
+}
+
+.dashboardV2 .readinessRing {
+  width: 110px !important;
+  height: 110px !important;
+}
+
+.dashboardV2 .readinessRing > div {
+  width: 74px !important;
+  height: 74px !important;
+}
+
+.dashboardV2 .readinessRing strong {
+  font-size: 22px !important;
+}
+
+.dashboardV2 .readinessBreakdown {
+  gap: 7px !important;
+}
+
+.dashboardV2 .readinessBreakdown > div {
+  min-height: 39px !important;
+  padding: 7px 9px !important;
+}
+
+.dashboardV2 .readinessBreakdown p {
+  font-size: 10.5px !important;
+}
+
+.dashboardV2 .readinessBreakdown strong {
+  font-size: 14px !important;
+}
+
+.dashboardV2 .readinessNote {
+  padding: 8px 10px !important;
+}
+
+.dashboardV2 .readinessNote p {
+  font-size: 10.3px !important;
+  line-height: 1.25 !important;
+}
+
+/* Make lower section less intrusive */
+.dashboardV2 .v2SecondGrid,
+.dashboardV2 .v2BottomGrid {
+  margin-top: 0 !important;
+  gap: 10px !important;
+}
+
+/* === FINAL COMPACT MANAGEMENT DASHBOARD END === */

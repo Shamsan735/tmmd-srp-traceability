@@ -1105,12 +1105,11 @@ function App() {
     ? Math.round((dashboardData.valid.length / calibrationTrackedItems) * 100)
     : 0;
 
-  const pmTrackedItems = dashboardData.pmDashboard
-    ? dashboardData.pmDashboard.valid.length + dashboardData.pmDashboard.dueSoon.length + dashboardData.pmDashboard.overdue.length
-    : 0;
+  const readinessPmDashboard = buildPmDashboardDataFromChecklistRecords(assets, checklistRecords);
+  const pmTrackedItems = readinessPmDashboard.valid.length + readinessPmDashboard.dueSoon.length + readinessPmDashboard.overdue.length;
 
-  const pmCompliancePercent = pmTrackedItems && dashboardData.pmDashboard
-    ? Math.round((dashboardData.pmDashboard.valid.length / pmTrackedItems) * 100)
+  const pmCompliancePercent = pmTrackedItems
+    ? Math.round((readinessPmDashboard.valid.length / pmTrackedItems) * 100)
     : 0;
 
   const overallAssetReadinessScore = Math.round(
