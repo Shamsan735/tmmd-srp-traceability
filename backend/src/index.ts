@@ -336,6 +336,8 @@ export default {
         assetsCreatedOrUpdated: 0,
         pmRecordsCreated: 0,
         calibrationRecordsCreated: 0,
+        duplicatePmSkipped: 0,
+        duplicateCalibrationSkipped: 0,
       };
 
       for (const record of records) {
@@ -363,7 +365,14 @@ export default {
           const pmDate = normalizeImportDate(record.pm_date) || new Date().toISOString().slice(0, 10);
           const resultText = normalizeImportText(record.status) || "Imported";
 
-          await env.DB.prepare(
+          const existingPm: any = await env.DB.prepare(
+            "SELECT id FROM checklist_records WHERE asset_id = ? AND checklist_type = 'PM' AND checklist_name = ? AND checklist_date = ? LIMIT 1"
+          ).bind(assetId, "Imported Service Related Products", pmDate).first();
+
+          if (existingPm?.id) {
+            summary.duplicatePmSkipped += 1;
+          } else {
+            await env.DB.prepare(
             `INSERT INTO checklist_records (
               asset_id,
               checklist_type,
@@ -390,10 +399,21 @@ export default {
           ).run();
 
           summary.pmRecordsCreated += 1;
+          }
         }
 
         if (importType === "calibration") {
-          await env.DB.prepare(
+          const certNumber = normalizeImportText(record.certificate_number);
+          const expiryDate = normalizeImportDate(record.expiry_date);
+
+          const existingCalibration: any = await env.DB.prepare(
+            "SELECT id FROM calibration_records WHERE asset_id = ? AND COALESCE(certificate_number, '') = COALESCE(?, '') AND COALESCE(expiry_date, '') = COALESCE(?, '') LIMIT 1"
+          ).bind(assetId, certNumber || null, expiryDate).first();
+
+          if (existingCalibration?.id) {
+            summary.duplicateCalibrationSkipped += 1;
+          } else {
+            await env.DB.prepare(
             `INSERT INTO calibration_records (
               asset_id,
               certificate_type,
@@ -409,9 +429,9 @@ export default {
           ).bind(
             assetId,
             normalizeImportText(record.certificate_type) || "Calibration Certificate",
-            normalizeImportText(record.certificate_number) || null,
+            certNumber || null,
             normalizeImportDate(record.calibration_date),
-            normalizeImportDate(record.expiry_date),
+            expiryDate,
             normalizeImportText(record.calibration_agency) || null,
             normalizeImportText(record.status) || null,
             normalizeImportText(record.status) || null,
@@ -420,6 +440,7 @@ export default {
           ).run();
 
           summary.calibrationRecordsCreated += 1;
+          }
         }
       }
 

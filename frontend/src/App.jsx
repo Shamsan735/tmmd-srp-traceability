@@ -1679,27 +1679,52 @@ function ExcelImportCenter() {
     setImportMessage("Applying import to live database...");
 
     try {
-      const response = await fetch(`${API_BASE}/api/import/excel`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...createAuthHeaders(getInitialAuth()?.token),
-        },
-        body: JSON.stringify({
-          type,
-          records: preview.records,
-        }),
-      });
+      const chunkSize = 75;
+      const chunks = [];
 
-      const result = await response.json().catch(() => ({}));
-
-      if (!response.ok || result.success === false) {
-        throw new Error(result.message || result.error || "Import failed.");
+      for (let index = 0; index < preview.records.length; index += chunkSize) {
+        chunks.push(preview.records.slice(index, index + chunkSize));
       }
 
-      const summary = result.summary || {};
+      const totalSummary = {
+        received: 0,
+        skipped: 0,
+        assetsCreatedOrUpdated: 0,
+        pmRecordsCreated: 0,
+        calibrationRecordsCreated: 0,
+        duplicatePmSkipped: 0,
+        duplicateCalibrationSkipped: 0,
+      };
+
+      for (let index = 0; index < chunks.length; index += 1) {
+        setImportMessage(`Applying import chunk ${index + 1} of ${chunks.length}...`);
+
+        const response = await fetch(`${API_BASE}/api/import/excel`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...createAuthHeaders(getInitialAuth()?.token),
+          },
+          body: JSON.stringify({
+            type,
+            records: chunks[index],
+          }),
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || result.success === false) {
+          throw new Error(result.message || result.error || `Import failed at chunk ${index + 1}.`);
+        }
+
+        const summary = result.summary || {};
+        Object.keys(totalSummary).forEach((key) => {
+          totalSummary[key] += Number(summary[key] || 0);
+        });
+      }
+
       setImportMessage(
-        `Import applied successfully. Received: ${summary.received || 0}, Skipped: ${summary.skipped || 0}, Assets: ${summary.assetsCreatedOrUpdated || 0}, PM: ${summary.pmRecordsCreated || 0}, Calibration: ${summary.calibrationRecordsCreated || 0}`
+        `Import applied successfully. Received: ${totalSummary.received}, Skipped: ${totalSummary.skipped}, Assets: ${totalSummary.assetsCreatedOrUpdated}, PM: ${totalSummary.pmRecordsCreated}, Calibration: ${totalSummary.calibrationRecordsCreated}, Duplicate Calibration Skipped: ${totalSummary.duplicateCalibrationSkipped}`
       );
     } catch (error) {
       console.error(error);
