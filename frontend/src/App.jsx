@@ -1671,7 +1671,7 @@ function ExcelImportCenter() {
       return;
     }
 
-    const confirmed = window.confirm(`Apply ${preview.type} import to live database? This will create/update sites, assets and related records.`);
+    const confirmed = window.confirm(`Apply ${preview.type} import to live database? Rows with missing equipment number or blank location will be skipped. Valid rows will create/update sites, assets and related records.`);
 
     if (!confirmed) return;
 
@@ -1728,7 +1728,7 @@ function ExcelImportCenter() {
         <p><strong>Reject Items:</strong> {preview.validation?.rejectItems ?? 0}</p>
         <p><strong>Pending Items:</strong> {preview.validation?.pendingItems ?? 0}</p>
         <p><strong>Sites Detected:</strong> {preview.validation?.newSitesDetected ?? preview.uniqueSites}</p>
-        <p><strong>Import Readiness:</strong> {(preview.validation?.missingEquipmentNumber || preview.validation?.blankLocation) ? "Need Review Before Import" : "Ready for Controlled Import"}</p>
+        <p><strong>Import Readiness:</strong> {(preview.validation?.missingEquipmentNumber || preview.validation?.blankLocation) ? "Ready with skipped invalid rows" : "Ready for Controlled Import"}</p>
 
         <h4>Status Summary</h4>
         {Object.entries(preview.statusSummary).slice(0, 8).map(([key, value]) => (
@@ -1739,7 +1739,7 @@ function ExcelImportCenter() {
           <button
             className="primaryButton"
             type="button"
-            disabled={applyingImport || !preview.records?.length || preview.validation?.missingEquipmentNumber || preview.validation?.blankLocation}
+            disabled={applyingImport || !preview.records?.length}
             onClick={() => applyExcelImport(type, preview)}
           >
             {applyingImport ? "Applying..." : "Apply Import"}
@@ -4100,6 +4100,7 @@ function PlaceholderPage({ title, subtitle, cards }) {
 }
 
 export default App;
+
 
 
 
