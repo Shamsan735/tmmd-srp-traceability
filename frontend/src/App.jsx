@@ -1538,7 +1538,7 @@ function App() {
                   <small>Cloud Sync</small>
                 </div>
                 <strong>{apiStatus}</strong>
-                <p>Secure live workspace with protected access and real-time operational monitoring.</p>
+                <p>Protected live workspace with operational visibility, secure access control, and synchronized monitoring across the enterprise suite.</p>
                 <div className="v2SyncPills">
                   <span>Live Monitoring</span>
                   <span>Secure Access</span>

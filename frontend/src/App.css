@@ -6079,3 +6079,230 @@ th {
 }
 
 /* === TMMD DASHBOARD ACCURACY LAYOUT POLISH END === */
+
+/* === TMMD HERO WOW POLISH START === */
+
+.v2Hero {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.78fr) !important;
+  gap: 18px !important;
+  align-items: stretch !important;
+  padding: 24px !important;
+  min-height: 228px !important;
+  border-radius: 24px !important;
+  background:
+    radial-gradient(circle at top left, rgba(20,184,166,0.12), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(22,58,95,0.10), transparent 32%),
+    linear-gradient(135deg, #ffffff 0%, #f8fbfe 48%, #f2fbfa 100%) !important;
+  border: 1px solid #D9E2EC !important;
+  border-left: 5px solid #14B8A6 !important;
+  box-shadow: 0 18px 40px rgba(16, 42, 67, 0.08) !important;
+  overflow: hidden !important;
+}
+
+.v2Hero::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background:
+    linear-gradient(90deg, rgba(20,184,166,0.08), transparent 18%, transparent 82%, rgba(22,58,95,0.06)),
+    linear-gradient(180deg, rgba(255,255,255,0.35), transparent 55%) !important;
+  pointer-events: none !important;
+}
+
+.v2Hero > div:first-child {
+  position: relative !important;
+  z-index: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  padding-right: 12px !important;
+}
+
+.v2Hero > div:first-child > :first-child {
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.18em !important;
+  text-transform: uppercase !important;
+  color: #163A5F !important;
+  margin-bottom: 10px !important;
+}
+
+.v2Hero h3 {
+  margin: 0 0 10px 0 !important;
+  font-size: 36px !important;
+  line-height: 1.04 !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.06em !important;
+  color: #102A43 !important;
+  max-width: 780px !important;
+}
+
+.v2Hero p {
+  margin: 0 0 16px 0 !important;
+  font-size: 14px !important;
+  line-height: 1.65 !important;
+  color: #486581 !important;
+  max-width: 820px !important;
+}
+
+.v2Hero > div:first-child > div:last-child {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  align-items: center !important;
+}
+
+.v2Hero button,
+.v2Hero .button,
+.v2Hero a.button {
+  min-height: 42px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  font-size: 12.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.01em !important;
+  box-shadow: 0 8px 18px rgba(16, 42, 67, 0.08) !important;
+}
+
+.v2Hero button:first-child,
+.v2Hero .button:first-child {
+  background: linear-gradient(135deg, #163A5F 0%, #244E7A 100%) !important;
+  border-color: #163A5F !important;
+  color: #FFFFFF !important;
+}
+
+.v2Hero button:not(:first-child),
+.v2Hero .button:not(:first-child) {
+  background: rgba(255,255,255,0.92) !important;
+  border: 1px solid #C9D7E6 !important;
+  color: #163A5F !important;
+}
+
+.v2Hero > div:last-child {
+  position: relative !important;
+  z-index: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  min-height: 100% !important;
+  padding: 20px 20px 18px !important;
+  border-radius: 22px !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,252,0.98) 100%) !important;
+  border: 1px solid #D9E2EC !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.9),
+    0 14px 30px rgba(16, 42, 67, 0.07) !important;
+}
+
+.v2Hero > div:last-child::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 18px !important;
+  right: 18px !important;
+  width: 64px !important;
+  height: 64px !important;
+  border-radius: 999px !important;
+  background: radial-gradient(circle, rgba(20,184,166,0.16), rgba(20,184,166,0.02) 70%) !important;
+  pointer-events: none !important;
+}
+
+.v2Hero > div:last-child > :first-child {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin-bottom: 12px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.18em !important;
+  text-transform: uppercase !important;
+  color: #163A5F !important;
+}
+
+.v2Hero > div:last-child > :first-child::before {
+  content: "" !important;
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 999px !important;
+  background: #22C55E !important;
+  box-shadow: 0 0 0 6px rgba(34,197,94,0.14) !important;
+  flex: 0 0 auto !important;
+}
+
+.v2Hero > div:last-child h3,
+.v2Hero > div:last-child h4,
+.v2Hero > div:last-child strong {
+  color: #102A43 !important;
+  font-size: 20px !important;
+  font-weight: 900 !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.v2Hero > div:last-child p {
+  font-size: 13px !important;
+  line-height: 1.65 !important;
+  color: #526577 !important;
+  margin: 8px 0 16px 0 !important;
+}
+
+.v2Hero > div:last-child > div:last-child,
+.v2Hero > div:last-child .tagRow,
+.v2Hero > div:last-child .chipRow {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  align-items: center !important;
+}
+
+.v2Hero > div:last-child button,
+.v2Hero > div:last-child .button,
+.v2Hero > div:last-child a.button,
+.v2Hero > div:last-child span {
+  min-height: 34px !important;
+  padding: 0 14px !important;
+  border-radius: 999px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  color: #0F766E !important;
+  background: linear-gradient(180deg, #F0FDFA 0%, #E6FFFA 100%) !important;
+  border: 1px solid rgba(20,184,166,0.26) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9) !important;
+}
+
+@media (max-width: 1200px) {
+  .v2Hero {
+    grid-template-columns: 1fr !important;
+    min-height: auto !important;
+  }
+
+  .v2Hero h3 {
+    font-size: 30px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .v2Hero {
+    padding: 18px !important;
+    gap: 14px !important;
+  }
+
+  .v2Hero h3 {
+    font-size: 24px !important;
+  }
+
+  .v2Hero p {
+    font-size: 13px !important;
+  }
+
+  .v2Hero button,
+  .v2Hero .button,
+  .v2Hero a.button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+/* === TMMD HERO WOW POLISH END === */
