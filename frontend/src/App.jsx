@@ -29,10 +29,11 @@ const navItems = [
   { id: "pm", label: "PM / Checklist", icon: "P" },
   { id: "repair", label: "Asset Repair", icon: "R" },
   { id: "reports", label: "Reports", icon: "R" },
+  { id: "import", label: "Excel Import", icon: "X" },
 ];
 
 const ROLE_TAB_ACCESS = {
-  Admin: ["dashboard", "movement", "traceability", "assets", "sites", "calibration", "pm", "repair", "reports"],
+  Admin: ["dashboard", "movement", "traceability", "assets", "sites", "calibration", "pm", "repair", "reports", "import"],
   Store: ["dashboard", "movement", "traceability", "sites", "repair", "reports"],
   Operator: ["dashboard", "movement", "traceability", "pm"],
   Viewer: ["dashboard", "traceability"],
@@ -955,7 +956,7 @@ function App() {
 
           <div className="navSectionLabel">Operations</div>
           {navItems
-            .filter((item) => ["movement", "assets", "sites", "reports"].includes(item.id) && canAccessTab(item.id))
+            .filter((item) => ["movement", "assets", "sites", "reports", "import"].includes(item.id) && canAccessTab(item.id))
             .map((item) => (
               <button
                 key={item.id}
@@ -1417,6 +1418,10 @@ function App() {
           />
         )}
 
+        {activeTab === "import" && (
+          <ExcelImportCenter />
+        )}
+
         {activeTab === "reports" && (
           <section className="pageGrid">
             <div className="dashboardIntro">
@@ -1498,6 +1503,96 @@ function App() {
         {loading && <div className="loadingOverlay">Loading live data...</div>}
       </main>
     </div>
+  );
+}
+
+
+function ExcelImportCenter() {
+  const [serviceFile, setServiceFile] = useState("");
+  const [calibrationFile, setCalibrationFile] = useState("");
+
+  return (
+    <section className="pageGrid">
+      <div className="dashboardIntro">
+        <div>
+          <p className="eyebrow">Admin Only</p>
+          <h3>Excel Import Center</h3>
+          <p>
+            Safe import staging area for client Excel files. Upload files here for review and mapping before applying data to the live system.
+          </p>
+        </div>
+        <div className="summaryChips">
+          <div className="summaryChip"><span>Status</span><strong>Preview Mode</strong></div>
+          <div className="summaryChip"><span>Risk</span><strong>Safe</strong></div>
+        </div>
+      </div>
+
+      <div className="twoColumn">
+        <Panel title="Service Related Products" action="Asset / PM source">
+          <div className="formGrid">
+            <label className="wide">
+              Upload Service Related Products Excel
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={(e) => setServiceFile(e.target.files?.[0]?.name || "")}
+              />
+            </label>
+
+            <div className="messageBox wide">
+              {serviceFile ? `Selected: ${serviceFile}` : "No file selected yet."}
+            </div>
+
+            <div className="importGuide wide">
+              <h4>Expected Mapping</h4>
+              <p>Equipment Name ? Asset Master</p>
+              <p>Equipment Serial No. ? Equipment Number</p>
+              <p>Make ? Manufacturer</p>
+              <p>Location ? Site Master / Current Site</p>
+              <p>Date - Preventive Maintenance Done ? Last PM Date</p>
+              <p>Status ? PM / Asset condition</p>
+            </div>
+          </div>
+        </Panel>
+
+        <Panel title="Master Calibration Log" action="Calibration source">
+          <div className="formGrid">
+            <label className="wide">
+              Upload Master Calibration Log Excel
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={(e) => setCalibrationFile(e.target.files?.[0]?.name || "")}
+              />
+            </label>
+
+            <div className="messageBox wide">
+              {calibrationFile ? `Selected: ${calibrationFile}` : "No file selected yet."}
+            </div>
+
+            <div className="importGuide wide">
+              <h4>Expected Mapping</h4>
+              <p>Unique Identification ? Equipment Number</p>
+              <p>Description ? Equipment Name</p>
+              <p>Model / Manufacturer ? Asset Master</p>
+              <p>Certificate No. ? Certificate Number</p>
+              <p>Date ? Calibration Date</p>
+              <p>Due Date ? Expiry Date</p>
+              <p>Location ? Site / Current Location</p>
+              <p>Status / Days ? Calibration Status</p>
+            </div>
+          </div>
+        </Panel>
+      </div>
+
+      <Panel title="Import Safety Note" action="Recommended workflow">
+        <div className="importGuide">
+          <p><strong>Current Mode:</strong> Preview and mapping only. No live database overwrite.</p>
+          <p><strong>Next Step:</strong> After client confirms mapping, enable Apply Import to update Site Master, Asset Master, PM Records, Calibration Records, Dashboard and Reports.</p>
+          <p><strong>Reason:</strong> This prevents wrong import due to duplicate equipment numbers, inconsistent site names, old calibration records, or rejected equipment items.</p>
+        </div>
+      </Panel>
+    </section>
   );
 }
 
