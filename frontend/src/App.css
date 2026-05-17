@@ -6486,3 +6486,252 @@ td:has(.siteMasterActionForceV2) {
   min-width: 245px !important;
   vertical-align: top !important;
 }
+
+/* === PM COMPLIANCE WOW CARD UI ONLY START === */
+
+/* UI-only redesign for PM Compliance Status panel.
+   No data logic, API, import, report, formula, or state changes. */
+
+.dashboardV2 .v2ActionCenter {
+  position: relative !important;
+  display: grid !important;
+  gap: 14px !important;
+  padding: 16px !important;
+}
+
+/* Make PM compliance panel feel like executive analytics */
+.dashboardV2 .v2ActionCenter::before {
+  content: "Overall PM Compliance" !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 178px !important;
+  height: 178px !important;
+  margin: 0 auto 8px auto !important;
+  border-radius: 999px !important;
+  color: #163A5F !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  text-align: center !important;
+  background:
+    radial-gradient(circle at center, #FFFFFF 0 52%, transparent 53%),
+    conic-gradient(#14B8A6 0 82%, #F59E0B 82% 92%, #EF4444 92% 100%) !important;
+  border: 1px solid #D9E2EC !important;
+  box-shadow:
+    0 20px 42px rgba(20, 184, 166, 0.16),
+    inset 0 0 0 12px rgba(255, 255, 255, 0.70) !important;
+}
+
+.dashboardV2 .v2ActionCenter::after {
+  content: "Live PM Health" !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  justify-self: center !important;
+  margin-top: -56px !important;
+  margin-bottom: 28px !important;
+  min-height: 28px !important;
+  padding: 0 13px !important;
+  border-radius: 999px !important;
+  background: #ECFDF5 !important;
+  border: 1px solid rgba(20, 184, 166, 0.22) !important;
+  color: #0F766E !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  box-shadow: 0 10px 20px rgba(20, 184, 166, 0.10) !important;
+}
+
+/* Premium PM status cards */
+.dashboardV2 .v2ActionAlert {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: 58px minmax(0, 1fr) auto !important;
+  gap: 14px !important;
+  align-items: center !important;
+  min-height: 104px !important;
+  padding: 16px 18px !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  background:
+    linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%) !important;
+  border: 1px solid #D9E2EC !important;
+  box-shadow:
+    0 14px 30px rgba(16, 42, 67, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.90) !important;
+}
+
+.dashboardV2 .v2ActionAlert:hover {
+  transform: translateY(-1px) !important;
+  box-shadow:
+    0 18px 38px rgba(16, 42, 67, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 0.90) !important;
+}
+
+.dashboardV2 .v2ActionAlert::before {
+  content: "" !important;
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 18px !important;
+  display: block !important;
+  grid-column: 1 !important;
+  grid-row: 1 / span 3 !important;
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,0.9), transparent 32%),
+    linear-gradient(135deg, #14B8A6, #0F766E) !important;
+  box-shadow: 0 14px 28px rgba(20, 184, 166, 0.20) !important;
+}
+
+.dashboardV2 .v2ActionAlert::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  background:
+    linear-gradient(90deg, rgba(20,184,166,0.10), transparent 34%),
+    radial-gradient(circle at 96% 18%, rgba(20,184,166,0.10), transparent 18%) !important;
+}
+
+.dashboardV2 .v2ActionAlert.warning::before {
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,0.9), transparent 32%),
+    linear-gradient(135deg, #F59E0B, #D97706) !important;
+  box-shadow: 0 14px 28px rgba(245, 158, 11, 0.20) !important;
+}
+
+.dashboardV2 .v2ActionAlert.warning::after {
+  background:
+    linear-gradient(90deg, rgba(245,158,11,0.10), transparent 34%),
+    radial-gradient(circle at 96% 18%, rgba(245,158,11,0.12), transparent 18%) !important;
+}
+
+.dashboardV2 .v2ActionAlert.danger::before {
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,0.9), transparent 32%),
+    linear-gradient(135deg, #EF4444, #B91C1C) !important;
+  box-shadow: 0 14px 28px rgba(239, 68, 68, 0.18) !important;
+}
+
+.dashboardV2 .v2ActionAlert.danger::after {
+  background:
+    linear-gradient(90deg, rgba(239,68,68,0.09), transparent 34%),
+    radial-gradient(circle at 96% 18%, rgba(239,68,68,0.11), transparent 18%) !important;
+}
+
+/* Hide old thin strip if present */
+.dashboardV2 .v2ActionAlert > span:first-child {
+  display: none !important;
+}
+
+/* Text hierarchy */
+.dashboardV2 .v2ActionAlert small {
+  position: relative !important;
+  z-index: 2 !important;
+  grid-column: 2 !important;
+  color: #0F766E !important;
+  font-size: 12px !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.dashboardV2 .v2ActionAlert.warning small {
+  color: #B45309 !important;
+}
+
+.dashboardV2 .v2ActionAlert.danger small {
+  color: #B42318 !important;
+}
+
+.dashboardV2 .v2ActionAlert p {
+  position: relative !important;
+  z-index: 2 !important;
+  grid-column: 2 !important;
+  margin: 5px 0 0 0 !important;
+  color: #526577 !important;
+  font-size: 12.5px !important;
+  line-height: 1.45 !important;
+  max-width: 270px !important;
+}
+
+.dashboardV2 .v2ActionAlert strong {
+  position: relative !important;
+  z-index: 2 !important;
+  grid-column: 3 !important;
+  grid-row: 1 / span 3 !important;
+  min-width: 86px !important;
+  min-height: 64px !important;
+  border-radius: 18px !important;
+  display: grid !important;
+  place-items: center !important;
+  align-self: center !important;
+  background: rgba(255, 255, 255, 0.80) !important;
+  border: 1px solid rgba(217, 226, 236, 0.92) !important;
+  color: #102A43 !important;
+  font-size: 34px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.06em !important;
+  box-shadow: 0 10px 22px rgba(16, 42, 67, 0.065) !important;
+}
+
+/* Add asset label under big number */
+.dashboardV2 .v2ActionAlert strong::after {
+  content: "assets" !important;
+  display: block !important;
+  margin-top: 5px !important;
+  color: #6B7280 !important;
+  font-size: 10px !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.03em !important;
+  text-transform: uppercase !important;
+}
+
+/* Panel header polish around PM card */
+.dashboardV2 .panel:has(.v2ActionCenter) {
+  border-radius: 24px !important;
+  border: 1px solid #D9E2EC !important;
+  background:
+    linear-gradient(180deg, #FFFFFF 0%, #FBFCFE 100%) !important;
+  box-shadow: 0 18px 42px rgba(16, 42, 67, 0.075) !important;
+}
+
+.dashboardV2 .panel:has(.v2ActionCenter) .panelHeader {
+  padding: 18px 20px !important;
+  border-bottom: 1px solid #E9EEF5 !important;
+  background:
+    linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%) !important;
+}
+
+.dashboardV2 .panel:has(.v2ActionCenter) .panelHeader h3 {
+  font-size: 19px !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.045em !important;
+  color: #102A43 !important;
+}
+
+.dashboardV2 .panel:has(.v2ActionCenter) .panelHeader span,
+.dashboardV2 .panel:has(.v2ActionCenter) .panelHeader .badge {
+  border-radius: 999px !important;
+  background: #F0FDFA !important;
+  border: 1px solid rgba(20, 184, 166, 0.22) !important;
+  color: #0F766E !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .dashboardV2 .v2ActionAlert {
+    grid-template-columns: 48px 1fr !important;
+  }
+
+  .dashboardV2 .v2ActionAlert strong {
+    grid-column: 2 !important;
+    grid-row: auto !important;
+    justify-self: start !important;
+    margin-top: 8px !important;
+  }
+}
+
+/* === PM COMPLIANCE WOW CARD UI ONLY END === */
