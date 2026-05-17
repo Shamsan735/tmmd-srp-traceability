@@ -4690,7 +4690,15 @@ function AssetMasterPage({ assets, allAssets, sites, auth, query, setQuery, load
               <tbody>
                 {assets.map((asset) => (
                   <tr key={pickId(asset)}>
-                    <td><strong>{getAssetName(asset)}</strong></td>
+                    <td>
+                      <strong>{getAssetName(asset)}</strong>
+                      <div className="inlineActionRow">
+                        <button className="miniActionButton" type="button" onClick={() => startAssetEdit(asset)}>Edit</button>
+                        <button className="miniActionButton danger" type="button" onClick={() => toggleAssetStatus(asset)}>
+                          {String(asset?.status || "Active").toLowerCase() === "inactive" || String(asset?.status || "").toLowerCase() === "retired" ? "Reactivate" : "Deactivate"}
+                        </button>
+                      </div>
+                    </td>
                     <td>{getAssetSerial(asset)}</td>
                     <td>{asset?.category || "-"}</td>
                     <td>{getCurrentSiteName(asset, sites)}</td>
