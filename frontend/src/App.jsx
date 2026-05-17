@@ -1595,6 +1595,29 @@ function ExcelImportCenter() {
         acc[key] = (acc[key] || 0) + 1;
         return acc;
       }, {}),
+      validation: (() => {
+        const serialValues = dataRows.map((row) => String(serialCol >= 0 ? row[serialCol] : "").trim());
+        const locationValues = dataRows.map((row) => String(shouldUseRemarksAsLocation ? row[remarksCol] : (locationCol >= 0 ? row[locationCol] : "")).trim());
+        const statusValues = dataRows.map((row) => String(statusCol >= 0 ? row[statusCol] : "").trim());
+
+        const seen = new Set();
+        const duplicates = new Set();
+
+        serialValues.forEach((serial) => {
+          if (!serial) return;
+          if (seen.has(serial)) duplicates.add(serial);
+          seen.add(serial);
+        });
+
+        return {
+          missingEquipmentNumber: serialValues.filter((serial) => !serial).length,
+          duplicateEquipmentNumber: duplicates.size,
+          blankLocation: locationValues.filter((location) => !location).length,
+          rejectItems: statusValues.filter((status) => /reject/i.test(status)).length,
+          pendingItems: statusValues.filter((status) => /pending/i.test(status)).length,
+          newSitesDetected: uniqueCount(locationValues),
+        };
+      })(),
       sample: dataRows.slice(0, 5).map((row) => ({
         equipment: equipmentCol >= 0 ? row[equipmentCol] : "",
         serial: serialCol >= 0 ? row[serialCol] : "",
@@ -1639,6 +1662,15 @@ function ExcelImportCenter() {
         <p><strong>Unique Equipment:</strong> {preview.uniqueEquipment}</p>
         <p><strong>Unique Sites / Locations:</strong> {preview.uniqueSites}</p>
         <p><strong>Mapped Fields:</strong> {preview.mappedFields.join(", ") || "No fields detected"}</p>
+
+        <h4>Import Validation Summary</h4>
+        <p><strong>Missing Equipment Number:</strong> {preview.validation?.missingEquipmentNumber ?? 0}</p>
+        <p><strong>Duplicate Equipment Number:</strong> {preview.validation?.duplicateEquipmentNumber ?? 0}</p>
+        <p><strong>Blank Location:</strong> {preview.validation?.blankLocation ?? 0}</p>
+        <p><strong>Reject Items:</strong> {preview.validation?.rejectItems ?? 0}</p>
+        <p><strong>Pending Items:</strong> {preview.validation?.pendingItems ?? 0}</p>
+        <p><strong>Sites Detected:</strong> {preview.validation?.newSitesDetected ?? preview.uniqueSites}</p>
+        <p><strong>Import Readiness:</strong> {(preview.validation?.missingEquipmentNumber || preview.validation?.blankLocation) ? "Need Review Before Import" : "Ready for Controlled Import"}</p>
 
         <h4>Status Summary</h4>
         {Object.entries(preview.statusSummary).slice(0, 8).map(([key, value]) => (
@@ -3999,6 +4031,7 @@ function PlaceholderPage({ title, subtitle, cards }) {
 }
 
 export default App;
+
 
 
 
