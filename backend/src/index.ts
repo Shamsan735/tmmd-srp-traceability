@@ -207,6 +207,50 @@ function normalizeImportDate(value: any) {
   return text;
 }
 
+function inferPmFrequencyMonths(value: unknown): number | null {
+  const text = String(value || "").toLowerCase().trim();
+
+  if (!text) return null;
+  if (text.includes("month") && /\b1\b/.test(text)) return 1;
+  if (text.includes("monthly")) return 1;
+  if (text.includes("quarter") || text.includes("3 month") || text.includes("3-month") || /\b3\b/.test(text)) return 3;
+  if (text.includes("6 month") || text.includes("6-month") || /\b6\b/.test(text)) return 6;
+  if (text.includes("year") || text.includes("annual") || text.includes("12 month") || /\b12\b/.test(text)) return 12;
+
+  const numeric = Number(text.replace(/[^0-9.]/g, ""));
+  if (Number.isFinite(numeric) && numeric > 0 && numeric <= 36) return Math.round(numeric);
+
+  return null;
+}
+
+function addMonthsToImportDate(dateValue: string | null, months: number | null): string | null {
+  if (!dateValue || !months) return null;
+
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return null;
+
+  date.setMonth(date.getMonth() + months);
+  return date.toISOString().slice(0, 10);
+}
+
+function getPmStatusFromDueDate(nextDueDate: string | null): string {
+  if (!nextDueDate) return "Valid";
+
+  const due = new Date(nextDueDate);
+  if (Number.isNaN(due.getTime())) return "Valid";
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+
+  const days = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (days < 0) return "Overdue";
+  if (days <= 10) return "Due Within 10 Days";
+  return "Valid";
+}
+
+
 async function getOrCreateImportSite(env: Env, siteNameRaw: any) {
   const siteName = normalizeImportText(siteNameRaw);
 
@@ -561,7 +605,10 @@ export default {
 
         if (importType === "service") {
           const pmDate = normalizeImportDate(record.pm_date) || new Date().toISOString().slice(0, 10);
-          const resultText = normalizeImportText(record.status) || "Imported";
+          const pmFrequencyText = normalizeImportText(record.pm_frequency) || normalizeImportText(record.frequency) || null;
+          const pmFrequencyMonths = inferPmFrequencyMonths(pmFrequencyText);
+          const nextPmDueDate = addMonthsToImportDate(pmDate, pmFrequencyMonths);
+          const resultText = getPmStatusFromDueDate(nextPmDueDate);
 
           const existingPm: any = await env.DB.prepare(
             "SELECT id FROM checklist_records WHERE asset_id = ? AND checklist_type = 'PM' AND checklist_name = ? AND checklist_date = ? LIMIT 1"
@@ -590,8 +637,8 @@ export default {
             pmDate,
             resultText,
             "Excel Import",
-            null,
-            null,
+            nextPmDueDate,
+            pmFrequencyText,
             normalizeImportText(record.file_name) || null,
             normalizeImportText(record.remarks) || null
           ).run();
@@ -640,44 +687,9 @@ export default {
           summary.calibrationRecordsCreated += 1;
           }
 
-          const calibrationPmDate = normalizeImportDate(record.calibration_date) || new Date().toISOString().slice(0, 10);
-          const calibrationPmName = "Imported Calibration Master PM / Inspection";
-
-          const existingCalibrationPm: any = await env.DB.prepare(
-            "SELECT id FROM checklist_records WHERE asset_id = ? AND checklist_type = 'PM' AND checklist_name = ? AND checklist_date = ? LIMIT 1"
-          ).bind(assetId, calibrationPmName, calibrationPmDate).first();
-
-          if (existingCalibrationPm?.id) {
-            summary.duplicatePmSkipped += 1;
-          } else {
-            await env.DB.prepare(
-              `INSERT INTO checklist_records (
-                asset_id,
-                checklist_type,
-                checklist_name,
-                checklist_date,
-                result,
-                performed_by,
-                next_due_date,
-                pm_frequency,
-                attachment_ref,
-                remarks
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-            ).bind(
-              assetId,
-              "PM",
-              calibrationPmName,
-              calibrationPmDate,
-              normalizeImportText(record.status) || "Imported",
-              "Excel Import",
-              normalizeImportDate(record.expiry_date),
-              null,
-              normalizeImportText(record.file_name) || null,
-              normalizeImportText(record.remarks) || location || null
-            ).run();
-
-            summary.calibrationPmRecordsCreated += 1;
-          }
+          // Calibration import must not create PM checklist records.
+          // PM checklist must come only from Service/PM file to avoid duplicate SRP/TMMD PM counts.
+          summary.calibrationPmRecordsCreated += 0;
         }
       }
 

@@ -248,6 +248,28 @@ function getPmDashboardStatus(asset) {
   return "missing";
 }
 
+function isCalibrationGeneratedPmRecord(record) {
+  const checklistName = String(record?.checklist_name || "").toLowerCase();
+  const attachment = String(record?.attachment_ref || record?.file_name || "").toLowerCase();
+  const remarks = String(record?.remarks || "").toLowerCase();
+
+  return (
+    checklistName.includes("imported calibration master") ||
+    checklistName.includes("calibration master pm") ||
+    checklistName.includes("calibration certificate") ||
+    attachment.includes("master calibration") ||
+    remarks.includes("master calibration")
+  );
+}
+
+function getCleanPmRecords(records) {
+  return normalizeList(records, "checklist_records").filter((record) => {
+    const checklistType = String(record?.checklist_type || "").toLowerCase();
+    if (checklistType && checklistType !== "pm") return false;
+    return !isCalibrationGeneratedPmRecord(record);
+  });
+}
+
 function csvSafe(value) {
   const text = value === null || value === undefined ? "" : String(value);
   return `"${text.replace(/"/g, '""')}"`;
@@ -927,13 +949,62 @@ function App() {
 
     downloadCsv("asset-repair-history-report.csv", rows);
   }
-  function exportPmChecklistCsv() {
-    const rows = [
-      ["Equipment Name", "Equipment Number", "Category", "Site", "Checklist Type", "Inspection Date", "Inspector Name", "PM Frequency", "Result", "Attachment", "Remarks"],
-      ["PM checklist records UI/API will be connected in the next module step.", "", "", "", "", "", "", "", "", "", ""],
-    ];
+  async function exportPmChecklistCsv() {
+    try {
+      const response = await fetch(API_BASE + "/api/checklist-records", {
+        headers: createAuthHeaders(auth?.token),
+      });
 
-    downloadCsv("pm-checklist-report.csv", rows);
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || result.error || "Unable to load PM checklist records.");
+      }
+
+      const pmRecords = getCleanPmRecords(result);
+
+      const rows = [
+        [
+          "Equipment Name",
+          "Equipment Number",
+          "Category",
+          "Site",
+          "Checklist Type",
+          "Checklist Name",
+          "Inspection / PM Date",
+          "Next PM Due",
+          "PM Frequency",
+          "Status",
+          "Performed By",
+          "Attachment",
+          "Remarks",
+        ],
+        ...pmRecords.map((record) => [
+          record.equipment_name || record.asset_name || record.name || record.equipment || "",
+          record.serial_number || record.identification_number || record.equipment_no || record.tag_number || "",
+          record.category || record.asset_category || "",
+          record.current_site_name || record.site_name || record.current_location || record.location || "",
+          record.checklist_type || "PM",
+          record.checklist_name || "",
+          record.checklist_date || record.inspection_date || record.pm_date || "",
+          record.next_due_date || "",
+          record.pm_frequency || "",
+          record.result || record.status || "",
+          record.performed_by || record.inspector_name || "",
+          record.attachment_ref || "",
+          record.remarks || "",
+        ]),
+      ];
+
+      if (!pmRecords.length) {
+        rows.push(["No PM checklist records found", "", "", "", "", "", "", "", "", "", "", "", ""]);
+      }
+
+      downloadCsv("pm-checklist-report.csv", rows);
+    } catch (error) {
+      console.error(error);
+      alert(error.message || "Unable to download PM checklist report.");
+    }
   }
   async function saveMovement(e) {
     e.preventDefault();
@@ -2074,6 +2145,16 @@ function ExcelImportCenter() {
       "Checklist Date",
       "Date"
     ]) : -1;
+    let pmFrequencyCol = type === "service" ? findColumn(headers, [
+      "PM Frequency",
+      "Frequency",
+      "Preventive Maintenance Frequency",
+      "Maintenance Frequency",
+      "PM Interval",
+      "Interval",
+      "Period",
+      "Schedule"
+    ]) : -1;
 
     // Some client Excel files have blank/merged headers, but date values appear like +046052-01.
     // For calibration file: date before certificate number = calibration date, date after certificate number = expiry/due date.
@@ -2126,6 +2207,7 @@ function ExcelImportCenter() {
         calibrationDateCol >= 0 ? "Calibration Date" : null,
         dueDateCol >= 0 ? "Due Date / Expiry Date" : null,
         pmDateCol >= 0 ? "PM Date / Checklist Date" : null,
+        pmFrequencyCol >= 0 ? "PM Frequency" : null,
       ].filter(Boolean),
       statusSummary: statuses.reduce((acc, status) => {
         const key = status || "Blank";
@@ -2165,6 +2247,7 @@ function ExcelImportCenter() {
         expiry_date: normalizeImportDateValue(dueDateCol >= 0 ? row[dueDateCol] : ""),
         calibration_date: normalizeImportDateValue(type === "calibration" && calibrationDateCol >= 0 ? row[calibrationDateCol] : ""),
         pm_date: normalizeImportDateValue(type === "service" && pmDateCol >= 0 ? row[pmDateCol] : ""),
+        pm_frequency: type === "service" && pmFrequencyCol >= 0 ? row[pmFrequencyCol] : "",
         remarks: remarksCol >= 0 ? row[remarksCol] : "",
         file_name: fileName,
       })).filter((item) => String(item.serial || "").trim() && String(item.equipment || "").trim() && String(item.location || "").trim()),
@@ -3228,7 +3311,7 @@ function PmMaintenancePage({ assets, sites, auth }) {
         throw new Error(result.message || result.error || "Unable to load PM records.");
       }
 
-      setPmRecords(normalizeList(result, "checklist_records"));
+      setPmRecords(getCleanPmRecords(result));
     } catch (error) {
       console.error(error);
       setPmMessage(error.message || "Unable to load PM records.");
