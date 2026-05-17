@@ -1108,27 +1108,67 @@ function App() {
     downloadCsv("complete-mobilization-movement-tracking-report.csv", rows);
   }
 
-  function exportCalibrationCsv() {
-    const rows = [
-      ["Equipment Name", "Equipment Number", "Category", "Current Site", "Certificate Number", "Expiry Date", "Status", "Attachment"],
-      ...assets.map((asset) => {
-        const days = daysUntilExpiry(asset);
-        const status = statusFromDays(days);
+  async function exportCalibrationCsv() {
+    try {
+      const response = await fetch(API_BASE + "/api/calibration-records", {
+        headers: createAuthHeaders(auth?.token),
+      });
 
-        return [
-          getAssetName(asset),
-          getAssetSerial(asset),
-          asset?.category || "",
-          getCurrentSiteName(asset, sites),
-          asset?.certificate_number || "",
-          asset?.expiry_date || asset?.calibration_expiry_date || "",
-          status.label,
-          asset?.attachment_name || "",
-        ];
-      }),
-    ];
+      const result = await response.json().catch(() => ({}));
 
-    downloadCsv("calibration-report.csv", rows);
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || result.error || "Unable to load calibration records.");
+      }
+
+      const records = getCurrentCalibrationRecords(normalizeList(result, "calibration_records"));
+
+      const rows = [
+        [
+          "Equipment Name",
+          "Equipment Number",
+          "Category",
+          "Current Site",
+          "Certificate Number",
+          "Calibration Date",
+          "Expiry Date",
+          "Days Until Expiry",
+          "Status",
+          "Calibration Agency",
+          "Attachment",
+          "Remarks",
+        ],
+        ...records.map((record) => {
+          const expiryDate = record.expiry_date || record.calibration_expiry_date || record.due_date || "";
+          const calibrationDate = record.calibration_date || record.date_of_calibration || "";
+          const days = daysUntilDateValue(expiryDate);
+          const status = calibrationStatusFromExpiry(expiryDate);
+
+          return [
+            record.equipment_name || record.asset_name || record.name || "",
+            record.serial_number || record.identification_number || record.equipment_no || record.tag_number || "",
+            record.category || record.asset_category || "",
+            record.current_site_name || record.site_name || record.current_location || record.location || "",
+            record.certificate_number || "",
+            calibrationDate || "",
+            expiryDate || "",
+            days === null ? "N/A" : days,
+            status.label,
+            record.calibration_agency || "",
+            record.attachment_ref || "",
+            record.remarks || "",
+          ];
+        }),
+      ];
+
+      if (!records.length) {
+        rows.push(["No calibration records found", "", "", "", "", "", "", "", "", "", "", ""]);
+      }
+
+      downloadCsv("calibration-current-report.csv", rows);
+    } catch (error) {
+      console.error(error);
+      alert(error.message || "Unable to download calibration report.");
+    }
   }
 
 
@@ -1930,7 +1970,7 @@ function App() {
               <div className="reportCard">
                 <span>05</span>
                 <h4>Calibration Report</h4>
-                <p>Calibration visibility report with equipment number, current site, certificate number, expiry date, status, and attachment reference.</p>
+                <p>Current calibration report with equipment number, site, certificate number, calibration date, expiry date, days remaining, and status.</p>
                 <div className="v2HeroActions">
                   <button className="primaryButton" onClick={exportCalibrationCsv}>Download CSV</button>
                   <button className="ghostButton" onClick={exportCalibrationExcel}>Download Excel</button>
