@@ -376,7 +376,7 @@ function getPmRecordSortScore(record) {
 }
 
 function buildPmDashboardDataFromChecklistRecords(assets, checklistRecords) {
-  const cleanRecords = getCleanPmRecords(checklistRecords);
+  const cleanRecords = getCurrentPmRecords(checklistRecords);
 
   function frequencyMonths(value) {
     const text = String(value || "").toLowerCase().trim();
@@ -559,6 +559,52 @@ function getCurrentCalibrationRecords(records) {
       return left - right;
     });
 }
+
+
+function getCurrentPmRecords(records) {
+  const list = getCleanPmRecords(records);
+  const latestByAsset = new Map();
+
+  function safeDateScore(record) {
+    const dateValue =
+      record?.next_due_date ||
+      record?.checklist_date ||
+      record?.inspection_date ||
+      record?.pm_date ||
+      record?.created_at ||
+      "";
+
+    const normalized = normalizeDashboardDateValue(dateValue);
+    const time = normalized ? new Date(normalized).getTime() : 0;
+
+    return Number.isFinite(time) && time > 0 ? time : Number(record?.id || 0);
+  }
+
+  function keyFor(record) {
+    return String(
+      record?.asset_id ||
+      record?.serial_number ||
+      record?.identification_number ||
+      record?.equipment_no ||
+      record?.tag_number ||
+      [record?.equipment_name, record?.site_name].filter(Boolean).join("::")
+    ).trim();
+  }
+
+  list.forEach((record) => {
+    const key = keyFor(record);
+    if (!key) return;
+
+    const existing = latestByAsset.get(key);
+
+    if (!existing || safeDateScore(record) >= safeDateScore(existing)) {
+      latestByAsset.set(key, record);
+    }
+  });
+
+  return Array.from(latestByAsset.values()).sort((a, b) => safeDateScore(b) - safeDateScore(a));
+}
+
 
 function csvSafe(value) {
   const text = value === null || value === undefined ? "" : String(value);
@@ -1304,7 +1350,7 @@ function App() {
         throw new Error(result.message || result.error || "Unable to load PM checklist records.");
       }
 
-      const pmRecords = getCleanPmRecords(result);
+      const pmRecords = getCurrentPmRecords(result);
 
       const rows = [
         [
@@ -3659,7 +3705,7 @@ function PmMaintenancePage({ assets, sites, auth }) {
         throw new Error(result.message || result.error || "Unable to load PM records.");
       }
 
-      setPmRecords(getCleanPmRecords(result));
+      setPmRecords(getCurrentPmRecords(result));
     } catch (error) {
       console.error(error);
       setPmMessage(error.message || "Unable to load PM records.");
