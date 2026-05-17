@@ -376,41 +376,7 @@ function getPmRecordSortScore(record) {
 }
 
 function buildPmDashboardDataFromChecklistRecords(assets, checklistRecords) {
-  const cleanRecords = getCurrentPmRecords(checklistRecords);
-
-  function frequencyMonths(value) {
-    const text = String(value || "").toLowerCase().trim();
-    if (!text) return null;
-    if (text.includes("monthly")) return 1;
-    if (text.includes("quarter") || text.includes("3 month") || text.includes("3-month")) return 3;
-    if (text.includes("6 month") || text.includes("6-month")) return 6;
-    if (text.includes("annual") || text.includes("year") || text.includes("12 month")) return 12;
-
-    const numeric = Number(text.replace(/[^0-9.]/g, ""));
-    if (Number.isFinite(numeric) && numeric > 0 && numeric <= 36) return Math.round(numeric);
-    return null;
-  }
-
-  function addMonths(dateValue, months) {
-    if (!dateValue || !months) return "";
-    const normalized = normalizeDashboardDateValue(dateValue);
-    if (!normalized) return "";
-
-    const date = new Date(normalized);
-    if (Number.isNaN(date.getTime())) return "";
-
-    date.setMonth(date.getMonth() + months);
-    return date.toISOString().slice(0, 10);
-  }
-
-  function dueDateFor(record) {
-    if (record?.next_due_date) return record.next_due_date;
-
-    const inspectionDate = record?.checklist_date || record?.inspection_date || record?.pm_date;
-    const months = frequencyMonths(record?.pm_frequency || record?.frequency);
-
-    return addMonths(inspectionDate, months);
-  }
+  const currentPmRecords = getCurrentPmRecords(checklistRecords);
 
   function statusFor(record) {
     const existing = String(record?.result || record?.status || "").toLowerCase();
@@ -418,7 +384,7 @@ function buildPmDashboardDataFromChecklistRecords(assets, checklistRecords) {
     if (existing.includes("overdue")) return "overdue";
     if (existing.includes("due within")) return "dueSoon";
 
-    const dueDate = dueDateFor(record);
+    const dueDate = record?.next_due_date || "";
     const days = daysUntilDateValue(dueDate);
 
     if (days !== null && days < 0) return "overdue";
@@ -438,38 +404,6 @@ function buildPmDashboardDataFromChecklistRecords(assets, checklistRecords) {
     return "missing";
   }
 
-  function recordKey(record) {
-    return String(
-      record?.asset_id ||
-      record?.serial_number ||
-      record?.identification_number ||
-      record?.equipment_no ||
-      record?.tag_number ||
-      [record?.equipment_name, record?.checklist_name].filter(Boolean).join("::")
-    ).trim();
-  }
-
-  function score(record) {
-    const dateValue = dueDateFor(record) || record?.checklist_date || record?.inspection_date || record?.pm_date || record?.created_at;
-    const normalized = normalizeDashboardDateValue(dateValue);
-    const time = normalized ? new Date(normalized).getTime() : 0;
-    return Number.isFinite(time) ? time : Number(record?.id || 0);
-  }
-
-  const latestByAsset = new Map();
-
-  cleanRecords.forEach((record) => {
-    const key = recordKey(record);
-    if (!key) return;
-
-    const existing = latestByAsset.get(key);
-    if (!existing || score(record) >= score(existing)) {
-      latestByAsset.set(key, record);
-    }
-  });
-
-  const pmRecords = Array.from(latestByAsset.values());
-
   const result = {
     valid: [],
     dueSoon: [],
@@ -477,18 +411,30 @@ function buildPmDashboardDataFromChecklistRecords(assets, checklistRecords) {
     missing: [],
   };
 
-  pmRecords.forEach((record) => {
+  const pmSerialKeys = new Set();
+
+  currentPmRecords.forEach((record) => {
+    const serial = String(
+      record?.serial_number ||
+      record?.identification_number ||
+      record?.equipment_no ||
+      record?.tag_number ||
+      ""
+    ).trim().toLowerCase();
+
+    if (serial) pmSerialKeys.add(serial);
+
     const status = statusFor(record);
+
     if (status === "overdue") result.overdue.push(record);
     else if (status === "dueSoon") result.dueSoon.push(record);
     else if (status === "valid") result.valid.push(record);
     else result.missing.push(record);
   });
 
-  const assetIdsWithPm = new Set(pmRecords.map((record) => String(record?.asset_id || "").trim()).filter(Boolean));
   assets.forEach((asset) => {
-    const assetId = String(pickId(asset) ?? asset?.id ?? "").trim();
-    if (assetId && !assetIdsWithPm.has(assetId)) {
+    const serial = String(getAssetSerial(asset) || "").trim().toLowerCase();
+    if (serial && !pmSerialKeys.has(serial)) {
       result.missing.push(asset);
     }
   });
@@ -563,7 +509,7 @@ function getCurrentCalibrationRecords(records) {
 
 function getCurrentPmRecords(records) {
   const list = getCleanPmRecords(records);
-  const latestByAsset = new Map();
+  const latestByEquipment = new Map();
 
   function safeDateScore(record) {
     const dateValue =
@@ -581,28 +527,39 @@ function getCurrentPmRecords(records) {
   }
 
   function keyFor(record) {
-    return String(
-      record?.asset_id ||
+    // Important: use equipment number / serial first.
+    // asset_id can be duplicated when old imports created duplicate asset rows.
+    const serial = String(
       record?.serial_number ||
       record?.identification_number ||
       record?.equipment_no ||
       record?.tag_number ||
-      [record?.equipment_name, record?.site_name].filter(Boolean).join("::")
-    ).trim();
+      record?.number ||
+      ""
+    ).trim().toLowerCase();
+
+    if (serial) return "serial::" + serial;
+
+    const equipment = String(record?.equipment_name || record?.asset_name || record?.equipment || "").trim().toLowerCase();
+    const site = String(record?.site_name || record?.current_site_name || record?.location || "").trim().toLowerCase();
+
+    if (equipment || site) return "equipment::" + equipment + "::" + site;
+
+    return "asset::" + String(record?.asset_id || record?.id || "").trim();
   }
 
   list.forEach((record) => {
     const key = keyFor(record);
     if (!key) return;
 
-    const existing = latestByAsset.get(key);
+    const existing = latestByEquipment.get(key);
 
     if (!existing || safeDateScore(record) >= safeDateScore(existing)) {
-      latestByAsset.set(key, record);
+      latestByEquipment.set(key, record);
     }
   });
 
-  return Array.from(latestByAsset.values()).sort((a, b) => safeDateScore(b) - safeDateScore(a));
+  return Array.from(latestByEquipment.values()).sort((a, b) => safeDateScore(b) - safeDateScore(a));
 }
 
 

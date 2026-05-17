@@ -6338,3 +6338,54 @@ th {
   border-color: #FECACA;
   background: #FFF7F7;
 }
+
+
+/* === FORCE MASTER ACTION VISIBILITY FINAL === */
+.inlineActionRow {
+  display: flex !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  margin-top: 8px !important;
+}
+
+.miniActionButton {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid #D9E2EC !important;
+  background: #FFFFFF !important;
+  color: #163A5F !important;
+  border-radius: 999px !important;
+  padding: 6px 11px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  box-shadow: 0 6px 14px rgba(16, 42, 67, 0.08) !important;
+}
+
+.miniActionButton:hover {
+  border-color: #14B8A6 !important;
+  color: #0F766E !important;
+}
+
+.miniActionButton.danger {
+  color: #B42318 !important;
+  border-color: #FECACA !important;
+  background: #FFF7F7 !important;
+}
+
+.tableWrap table th:last-child,
+.tableWrap table td:last-child {
+  position: sticky !important;
+  right: 0 !important;
+  z-index: 3 !important;
+  background: #FFFFFF !important;
+  min-width: 150px !important;
+  box-shadow: -8px 0 14px rgba(16, 42, 67, 0.04) !important;
+}
+
+.tableWrap table th:last-child {
+  background: #F8FAFC !important;
+  z-index: 4 !important;
+}
