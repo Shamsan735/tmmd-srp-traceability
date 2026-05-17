@@ -1354,7 +1354,12 @@ function App() {
 
       setTraceAsset(asset);
 
-      const assetId = pickId(asset);
+      if (!canManageAssets) {
+      setAssetMessage("Only Admin can deactivate or reactivate asset records.");
+      return;
+    }
+
+    const assetId = pickId(asset);
       const historyRes = await fetch(`${API_BASE}/api/assets/${assetId}/history`, {
         headers: authHeaders,
       });
@@ -4442,6 +4447,7 @@ function AssetMasterPage({ assets, allAssets, sites, auth, query, setQuery, load
   const [editingAssetId, setEditingAssetId] = useState("");
   const [savingAsset, setSavingAsset] = useState(false);
   const [assetMessage, setAssetMessage] = useState("");
+  const canManageAssets = normalizeUserRole(auth?.user?.role) === "Admin";
 
   function updateAssetForm(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -4470,6 +4476,11 @@ function AssetMasterPage({ assets, allAssets, sites, auth, query, setQuery, load
 
   async function saveAsset(e) {
     e.preventDefault();
+
+    if (!canManageAssets) {
+      setAssetMessage("Only Admin can add or update asset master records.");
+      return;
+    }
 
     if (!form.equipment_name.trim() || !form.serial_number.trim()) {
       setAssetMessage("Equipment Name and Equipment Number are required.");
@@ -4655,7 +4666,7 @@ function AssetMasterPage({ assets, allAssets, sites, auth, query, setQuery, load
             </label>
 
             <div className="v2HeroActions wide">
-              <button className="primaryButton" type="submit" disabled={savingAsset}>
+              <button className="primaryButton" type="submit" disabled={savingAsset || !canManageAssets}>
                 {savingAsset ? "Saving..." : editingAssetId ? "Update Equipment" : "Add Equipment"}
               </button>
               <button className="ghostButton" type="button" onClick={resetAssetForm}>
@@ -4663,6 +4674,7 @@ function AssetMasterPage({ assets, allAssets, sites, auth, query, setQuery, load
               </button>
             </div>
 
+            {!canManageAssets && <div className="messageBox wide">Read-only access: only Admin can add, edit, update, deactivate, or reactivate assets.</div>}
             {assetMessage && <div className="messageBox wide">{assetMessage}</div>}
           </form>
         </Panel>
@@ -4692,12 +4704,14 @@ function AssetMasterPage({ assets, allAssets, sites, auth, query, setQuery, load
                   <tr key={pickId(asset)}>
                     <td>
                       <strong>{getAssetName(asset)}</strong>
-                      <div className="inlineActionRow">
-                        <button className="miniActionButton" type="button" onClick={() => startAssetEdit(asset)}>Edit</button>
-                        <button className="miniActionButton danger" type="button" onClick={() => toggleAssetStatus(asset)}>
-                          {String(asset?.status || "Active").toLowerCase() === "inactive" || String(asset?.status || "").toLowerCase() === "retired" ? "Reactivate" : "Deactivate"}
-                        </button>
-                      </div>
+                      {canManageAssets && (
+                        <div className="inlineActionRow">
+                          <button className="miniActionButton" type="button" onClick={() => startAssetEdit(asset)}>Edit</button>
+                          <button className="miniActionButton danger" type="button" onClick={() => toggleAssetStatus(asset)}>
+                            {String(asset?.status || "Active").toLowerCase() === "inactive" || String(asset?.status || "").toLowerCase() === "retired" ? "Reactivate" : "Deactivate"}
+                          </button>
+                        </div>
+                      )}
                     </td>
                     <td>{getAssetSerial(asset)}</td>
                     <td>{asset?.category || "-"}</td>
@@ -4741,6 +4755,7 @@ function SiteMasterPage({ sites, auth, loadData }) {
   const [editingSiteId, setEditingSiteId] = useState("");
   const [savingSite, setSavingSite] = useState(false);
   const [siteMessage, setSiteMessage] = useState("");
+  const canManageSites = normalizeUserRole(auth?.user?.role) === "Admin";
 
   const activeSites = sites.filter(isSiteActive);
   const inactiveSites = sites.filter((site) => !isSiteActive(site));
@@ -4820,6 +4835,11 @@ function SiteMasterPage({ sites, auth, loadData }) {
   }
 
   async function toggleSite(site) {
+    if (!canManageSites) {
+      setSiteMessage("Only Admin can deactivate or reactivate site records.");
+      return;
+    }
+
     const siteId = pickId(site);
     const active = isSiteActive(site);
     const action = active ? "deactivate" : "activate";
@@ -4970,7 +4990,7 @@ function SiteMasterPage({ sites, auth, loadData }) {
             </label>
 
             <div className="v2HeroActions wide">
-              <button className="primaryButton" type="submit" disabled={savingSite}>
+              <button className="primaryButton" type="submit" disabled={savingSite || !canManageSites}>
                 {savingSite ? "Saving..." : editingSiteId ? "Update Site" : "Add Site"}
               </button>
               <button className="ghostButton" type="button" onClick={resetForm}>
@@ -4978,6 +4998,7 @@ function SiteMasterPage({ sites, auth, loadData }) {
               </button>
             </div>
 
+            {!canManageSites && <div className="messageBox wide">Read-only access: only Admin can add, edit, update, deactivate, or reactivate sites.</div>}
             {siteMessage && <div className="messageBox wide">{siteMessage}</div>}
           </form>
         </Panel>
