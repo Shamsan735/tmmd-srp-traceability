@@ -376,32 +376,41 @@ function getPmRecordSortScore(record) {
 }
 
 function buildPmDashboardDataFromChecklistRecords(assets, checklistRecords) {
-  const currentPmRecords = getCurrentPmRecords(checklistRecords);
+  const currentPmRecords = typeof getCurrentPmRecords === "function"
+    ? getCurrentPmRecords(checklistRecords)
+    : getCleanPmRecords(checklistRecords);
 
   function statusFor(record) {
-    const existing = String(record?.result || record?.status || "").toLowerCase();
-
-    if (existing.includes("overdue")) return "overdue";
-    if (existing.includes("due within")) return "dueSoon";
+    const text = String(
+      record?.result ||
+      record?.status ||
+      record?.checklist_status ||
+      ""
+    ).toLowerCase();
 
     const dueDate = record?.next_due_date || "";
     const days = daysUntilDateValue(dueDate);
 
-    if (days !== null && days < 0) return "overdue";
-    if (days !== null && days <= 10) return "dueSoon";
-    if (days !== null && days > 10) return "valid";
-
-    if (
-      existing.includes("valid") ||
-      existing.includes("completed") ||
-      existing.includes("pass") ||
-      existing.includes("ok") ||
-      existing.includes("imported")
-    ) {
-      return "valid";
+    if (text.includes("overdue") || text.includes("expired") || (days !== null && days < 0)) {
+      return "overdue";
     }
 
-    return "missing";
+    if (text.includes("due within") || (days !== null && days <= 10)) {
+      return "dueSoon";
+    }
+
+    if (
+      text.includes("reject") ||
+      text.includes("fail") ||
+      text.includes("pending")
+    ) {
+      return "missing";
+    }
+
+    // Important handover logic:
+    // If a current PM record exists and it is not overdue/due/rejected,
+    // count it as PM Valid so dashboard reflects PM Checklist current records.
+    return "valid";
   }
 
   const result = {
@@ -411,32 +420,13 @@ function buildPmDashboardDataFromChecklistRecords(assets, checklistRecords) {
     missing: [],
   };
 
-  const pmSerialKeys = new Set();
-
   currentPmRecords.forEach((record) => {
-    const serial = String(
-      record?.serial_number ||
-      record?.identification_number ||
-      record?.equipment_no ||
-      record?.tag_number ||
-      ""
-    ).trim().toLowerCase();
-
-    if (serial) pmSerialKeys.add(serial);
-
     const status = statusFor(record);
 
     if (status === "overdue") result.overdue.push(record);
     else if (status === "dueSoon") result.dueSoon.push(record);
     else if (status === "valid") result.valid.push(record);
     else result.missing.push(record);
-  });
-
-  assets.forEach((asset) => {
-    const serial = String(getAssetSerial(asset) || "").trim().toLowerCase();
-    if (serial && !pmSerialKeys.has(serial)) {
-      result.missing.push(asset);
-    }
   });
 
   return result;
