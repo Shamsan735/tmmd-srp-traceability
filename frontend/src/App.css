@@ -6389,3 +6389,50 @@ th {
   background: #F8FAFC !important;
   z-index: 4 !important;
 }
+
+
+/* === FORCE SITE MASTER INLINE ACTIONS === */
+.siteMasterInlineActions {
+  display: flex !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  margin-top: 8px !important;
+  align-items: center !important;
+}
+
+.siteMiniAction {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 27px !important;
+  border: 1px solid #D9E2EC !important;
+  background: #FFFFFF !important;
+  color: #163A5F !important;
+  border-radius: 999px !important;
+  padding: 5px 11px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  box-shadow: 0 6px 14px rgba(16, 42, 67, 0.08) !important;
+}
+
+.siteMiniAction:hover {
+  border-color: #14B8A6 !important;
+  color: #0F766E !important;
+}
+
+.siteMiniAction.danger {
+  color: #B42318 !important;
+  border-color: #FECACA !important;
+  background: #FFF7F7 !important;
+}
+
+.siteMiniAction.danger:hover {
+  border-color: #F97066 !important;
+  color: #912018 !important;
+}
+
+td:has(.siteMasterInlineActions) {
+  min-width: 220px !important;
+}
