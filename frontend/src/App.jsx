@@ -294,8 +294,8 @@ function downloadStyledWorkbook(filename, sheetName, rows, options = {}) {
 }
 
 function downloadCsv(filename, rows) {
-  const csv = rows.map((row) => row.map(csvSafe).join(",")).join("n");
-  const blob = new Blob(["uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const csv = rows.map((row) => row.map(csvSafe).join(",")).join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
 
@@ -812,7 +812,7 @@ function App() {
   }
   async function exportPmChecklistCsv() {
     try {
-      const response = await fetch(`${API_BASE}/api/checklist-records`, {
+      const response = await fetch(\`${API_BASE}/api/checklist-records\`, {
         headers: createAuthHeaders(auth.token),
       });
 
@@ -1881,21 +1881,21 @@ function ExcelImportCenter() {
     if (!text) return "";
 
     // Handles imported Excel serials shown like +046052-01, +046416-01, +045873-01
-    const plusSerialMatch = text.match(/^+?0*(d{4,6})(?:-d+)?$/);
+    const plusSerialMatch = text.match(/^\+?0*(\d{4,6})(?:-\d+)?$/);
     if (plusSerialMatch) {
       const converted = convertExcelSerial(plusSerialMatch[1]);
       if (converted) return converted;
     }
 
     // Handles plain serial text like 46052 / 046052
-    const plainSerialMatch = text.match(/^0*(d{4,6})$/);
+    const plainSerialMatch = text.match(/^0*(\d{4,6})$/);
     if (plainSerialMatch) {
       const converted = convertExcelSerial(plainSerialMatch[1]);
       if (converted) return converted;
     }
 
     // Handles dd/mm/yyyy, dd-mm-yyyy
-    const dmy = text.match(/^(d{1,2})[/-](d{1,2})[/-](d{2,4})$/);
+    const dmy = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
     if (dmy) {
       const day = dmy[1].padStart(2, "0");
       const month = dmy[2].padStart(2, "0");
@@ -1917,12 +1917,12 @@ function ExcelImportCenter() {
     const text = String(value).trim();
     if (!text) return false;
 
-    if (/^+?0*d{4,6}(?:-d+)?$/.test(text)) return true;
-    if (/^d{1,2}[/-]d{1,2}[/-]d{2,4}$/.test(text)) return true;
-    if (/^d{4}[/-]d{1,2}[/-]d{1,2}$/.test(text)) return true;
+    if (/^\+?0*\d{4,6}(?:-\d+)?$/.test(text)) return true;
+    if (/^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}$/.test(text)) return true;
+    if (/^\d{4}[\/-]\d{1,2}[\/-]\d{1,2}$/.test(text)) return true;
 
     const parsed = new Date(text);
-    return !Number.isNaN(parsed.getTime()) && /d/.test(text);
+    return !Number.isNaN(parsed.getTime()) && /\d/.test(text);
   }
 
   function scoreDateColumn(rows, columnIndex) {
