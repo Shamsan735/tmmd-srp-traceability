@@ -1835,6 +1835,59 @@ function ExcelImportCenter() {
     return text;
   }
 
+  function isImportDateLikeValue(value) {
+    if (value === null || value === undefined) return false;
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return true;
+    if (typeof value === "number" && Number.isFinite(value) && value > 25000 && value < 70000) return true;
+
+    const text = String(value).trim();
+    if (!text) return false;
+
+    if (/^\+?0*\d{4,6}(?:-\d+)?$/.test(text)) return true;
+    if (/^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}$/.test(text)) return true;
+    if (/^\d{4}[\/-]\d{1,2}[\/-]\d{1,2}$/.test(text)) return true;
+
+    const parsed = new Date(text);
+    return !Number.isNaN(parsed.getTime()) && /\d/.test(text);
+  }
+
+  function scoreDateColumn(rows, columnIndex) {
+    return rows.reduce((score, row) => score + (isImportDateLikeValue(row[columnIndex]) ? 1 : 0), 0);
+  }
+
+  function inferDateColumnFromRows(rows, startIndex, endIndex, direction = "forward") {
+    if (!rows.length) return -1;
+
+    const firstRow = rows[0] || [];
+    const maxIndex = Math.max(...rows.map((row) => row.length), firstRow.length) - 1;
+
+    const start = Math.max(0, startIndex);
+    const end = Math.min(maxIndex, endIndex);
+
+    let bestIndex = -1;
+    let bestScore = 0;
+
+    if (direction === "backward") {
+      for (let index = end; index >= start; index -= 1) {
+        const score = scoreDateColumn(rows, index);
+        if (score > bestScore) {
+          bestScore = score;
+          bestIndex = index;
+        }
+      }
+    } else {
+      for (let index = start; index <= end; index += 1) {
+        const score = scoreDateColumn(rows, index);
+        if (score > bestScore) {
+          bestScore = score;
+          bestIndex = index;
+        }
+      }
+    }
+
+    return bestScore >= Math.max(2, Math.ceil(rows.length * 0.10)) ? bestIndex : -1;
+  }
+
   function detectHeaderRow(rows) {
     let bestIndex = 0;
     let bestScore = -1;
@@ -1872,7 +1925,7 @@ function ExcelImportCenter() {
     const statusCol = findColumn(headers, ["Status"]);
     const makeCol = findColumn(headers, ["Make", "Manufacturer"]);
     const certificateCol = findColumn(headers, ["Certificate No", "Certificate Number", "Cert No", "Certificate"]);
-    const dueDateCol = findColumn(headers, [
+    let dueDateCol = findColumn(headers, [
       "Due Date",
       "Expiry Date",
       "Expire Date",
@@ -1887,7 +1940,7 @@ function ExcelImportCenter() {
       "Certificate Expiry",
       "Due"
     ]);
-    const calibrationDateCol = findColumn(headers, [
+    let calibrationDateCol = findColumn(headers, [
       "Calibration Date",
       "Date of Calibration",
       "Cal Date",
@@ -1897,7 +1950,7 @@ function ExcelImportCenter() {
       "Certificate Date",
       "Issue Date"
     ]);
-    const pmDateCol = type === "service" ? findColumn(headers, [
+    let pmDateCol = type === "service" ? findColumn(headers, [
       "Preventive Maintenance Done",
       "Preventive Maintenance Date",
       "PM Done",
@@ -1908,6 +1961,33 @@ function ExcelImportCenter() {
       "Checklist Date",
       "Date"
     ]) : -1;
+
+    // Some client Excel files have blank/merged headers, but date values appear like +046052-01.
+    // For calibration file: date before certificate number = calibration date, date after certificate number = expiry/due date.
+    if (type === "calibration") {
+      const maxColumnIndex = Math.max(...dataRows.map((row) => row.length), headers.length) - 1;
+
+      if (calibrationDateCol < 0 && certificateCol >= 0) {
+        calibrationDateCol = inferDateColumnFromRows(dataRows, 0, Math.max(0, certificateCol - 1), "backward");
+      }
+
+      if (dueDateCol < 0 && certificateCol >= 0) {
+        dueDateCol = inferDateColumnFromRows(dataRows, certificateCol + 1, maxColumnIndex, "forward");
+      }
+
+      if (calibrationDateCol < 0) {
+        calibrationDateCol = inferDateColumnFromRows(dataRows, 0, maxColumnIndex, "forward");
+      }
+
+      if (dueDateCol < 0) {
+        dueDateCol = inferDateColumnFromRows(dataRows, 0, maxColumnIndex, "backward");
+      }
+    }
+
+    if (type === "service" && pmDateCol < 0) {
+      const maxColumnIndex = Math.max(...dataRows.map((row) => row.length), headers.length) - 1;
+      pmDateCol = inferDateColumnFromRows(dataRows, 0, maxColumnIndex, "backward");
+    }
 
     const rawLocations = dataRows.map((row) => locationCol >= 0 ? row[locationCol] : "");
     const rawUniqueLocations = uniqueCount(rawLocations);
