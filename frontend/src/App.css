@@ -8201,3 +8201,164 @@ td:has(.siteMasterActionForceV2) {
 }
 
 /* === FINAL DASHBOARD HERO FIT FIX END === */
+
+/* === FINAL DASHBOARD UTILITY POLISH START === */
+
+/* ---------- Compact Cloud Sync ---------- */
+.dashboardV2 .v2SyncCard {
+  width: 320px !important;
+  max-width: 320px !important;
+  min-height: 92px !important;
+  height: 92px !important;
+  padding: 14px 16px !important;
+  border-radius: 20px !important;
+  box-shadow: 0 10px 28px rgba(22, 58, 95, 0.08) !important;
+  background: #ffffff !important;
+  border: 1px solid #d9e2ec !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.dashboardV2 .v2SyncCard::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 14px !important;
+  right: 14px !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 999px !important;
+  background: radial-gradient(circle, rgba(20,184,166,0.16) 0%, rgba(20,184,166,0.05) 60%, rgba(20,184,166,0) 100%) !important;
+}
+
+.dashboardV2 .v2SyncTop {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin: 0 !important;
+}
+
+.dashboardV2 .v2SyncTop small {
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.16em !important;
+  color: #163A5F !important;
+  text-transform: uppercase !important;
+}
+
+.dashboardV2 .v2SyncDot,
+.dashboardV2 .v2StatusDot {
+  width: 12px !important;
+  height: 12px !important;
+  min-width: 12px !important;
+  min-height: 12px !important;
+  border-radius: 999px !important;
+  background: #22c55e !important;
+  box-shadow: 0 0 0 5px rgba(34,197,94,0.14) !important;
+}
+
+.dashboardV2 .v2SyncCard strong {
+  font-size: 26px !important;
+  line-height: 1 !important;
+  font-weight: 800 !important;
+  color: #102A43 !important;
+  margin: 0 !important;
+}
+
+.dashboardV2 .v2SyncCard p {
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+  color: #52606D !important;
+  margin: 0 !important;
+  max-width: 240px !important;
+  display: none !important;
+}
+
+.dashboardV2 .v2SyncPills,
+.dashboardV2 .v2SyncTags {
+  display: none !important;
+}
+
+/* ---------- Hero tighter / more software-like ---------- */
+.dashboardV2 .v2Hero {
+  min-height: 118px !important;
+  height: auto !important;
+  padding: 18px 18px !important;
+  border-radius: 22px !important;
+  align-items: center !important;
+}
+
+.dashboardV2 .v2Hero .heroContent,
+.dashboardV2 .v2HeroLeft {
+  gap: 8px !important;
+}
+
+.dashboardV2 .v2Hero h1,
+.dashboardV2 .v2HeroTitle {
+  font-size: 28px !important;
+  line-height: 1.1 !important;
+}
+
+.dashboardV2 .v2Hero p,
+.dashboardV2 .v2HeroDesc {
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+  max-width: 760px !important;
+}
+
+/* ---------- Quick Trace Search professional placement ---------- */
+.dashboardV2 .v2QuickTraceDock {
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+  margin-top: 4px !important;
+}
+
+.dashboardV2 .v2QuickTraceDock .panel {
+  min-height: auto !important;
+}
+
+.dashboardV2 .v2QuickTraceDock .panelHeader,
+.dashboardV2 .v2QuickTraceDock .panel-title {
+  margin-bottom: 10px !important;
+}
+
+.dashboardV2 .v2QuickTraceDock input[type="text"],
+.dashboardV2 .v2QuickTraceDock input:not([type]) {
+  min-height: 46px !important;
+  border-radius: 12px !important;
+}
+
+.dashboardV2 .v2QuickTraceDock button {
+  min-height: 46px !important;
+  border-radius: 12px !important;
+}
+
+/* If panel body structure allows, make it more compact and business-like */
+.dashboardV2 .v2QuickTraceDock form,
+.dashboardV2 .v2QuickTraceDock .quickTraceForm,
+.dashboardV2 .v2QuickTraceDock .quickTraceBody {
+  display: grid !important;
+  grid-template-columns: 1.4fr auto !important;
+  gap: 12px !important;
+  align-items: end !important;
+}
+
+.dashboardV2 .v2QuickTraceDock p {
+  margin-bottom: 10px !important;
+}
+
+/* ---------- Better vertical rhythm ---------- */
+.dashboardV2 .v2MainGrid,
+.dashboardV2 .dashboardMainGrid,
+.dashboardV2 .dashboardContent {
+  gap: 14px !important;
+}
+
+.dashboardV2 .panel {
+  border-radius: 20px !important;
+}
+
+/* === FINAL DASHBOARD UTILITY POLISH END === */

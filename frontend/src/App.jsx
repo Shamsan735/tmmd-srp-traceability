@@ -1743,7 +1743,8 @@ function App() {
                 </div>
               </Panel>
 
-              <Panel title="Quick Trace Search" action="Asset lookup">
+              <div className="v2QuickTraceDock">
+<Panel title="Quick Trace Search" action="Asset lookup">
                 <div className="v2TraceCard">
                   <p>Search equipment by identification number and open movement history.</p>
                   <input
@@ -1757,6 +1758,7 @@ function App() {
                   </button>
                 </div>
               </Panel>
+</div>
             </div>
 
             <div className="v2SecondGrid">
