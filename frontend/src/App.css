@@ -8119,3 +8119,85 @@ td:has(.siteMasterActionForceV2) {
 }
 
 /* === FINAL COCKPIT DASHBOARD POLISH END === */
+
+/* === FINAL DASHBOARD HERO FIT FIX START === */
+
+/* Final dashboard fit fix - CSS only */
+
+/* Give hero enough space so Cloud Sync does not cut */
+.dashboardV2 .v2Hero {
+  height: 146px !important;
+  min-height: 146px !important;
+  padding: 14px 16px !important;
+  align-items: center !important;
+  overflow: visible !important;
+}
+
+/* Keep dashboard row spacing clean */
+.dashboardV2 .v2KpiGrid {
+  margin-top: 2px !important;
+}
+
+/* Cloud sync should fit inside like a compact system status widget */
+.dashboardV2 .v2SyncCard {
+  height: 118px !important;
+  min-height: 118px !important;
+  max-height: 118px !important;
+  padding: 11px 13px !important;
+  overflow: hidden !important;
+  display: grid !important;
+  align-content: center !important;
+  gap: 5px !important;
+}
+
+.dashboardV2 .v2SyncTop {
+  gap: 8px !important;
+}
+
+.dashboardV2 .v2SyncTop small {
+  font-size: 9.5px !important;
+  letter-spacing: 0.12em !important;
+}
+
+.dashboardV2 .v2SyncCard strong {
+  font-size: 19px !important;
+  line-height: 1 !important;
+}
+
+.dashboardV2 .v2SyncCard p {
+  font-size: 10px !important;
+  line-height: 1.28 !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+.dashboardV2 .v2SyncPills {
+  margin-top: 2px !important;
+  gap: 6px !important;
+}
+
+.dashboardV2 .v2SyncPills span {
+  padding: 4px 8px !important;
+  font-size: 8.8px !important;
+}
+
+/* Slightly cleaner KPI row visibility */
+.dashboardV2 .v2KpiCard,
+.dashboardV2 .v2KpiGrid > * {
+  height: 78px !important;
+  min-height: 78px !important;
+}
+
+/* Make three cards sit more stable below KPI strip */
+.dashboardV2 .v2MainGrid {
+  margin-top: 2px !important;
+}
+
+/* Avoid right floating chatbot covering readiness card content too much */
+.dashboardV2 .panel:has(.overallReadinessCard) {
+  padding-right: 0 !important;
+}
+
+/* === FINAL DASHBOARD HERO FIT FIX END === */
