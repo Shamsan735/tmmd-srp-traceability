@@ -165,15 +165,28 @@ function daysUntilDateValue(value) {
 
 function getAssetCalibrationDays(asset, calibrationRecords) {
   const assetId = String(pickId(asset) ?? asset?.id ?? "").trim();
+  const assetSerial = String(getAssetSerial(asset) || "").trim().toLowerCase();
 
   const relatedRecords = calibrationRecords
-    .filter((record) => String(record?.asset_id ?? "").trim() === assetId)
+    .filter((record) => {
+      const recordAssetId = String(record?.asset_id ?? "").trim();
+      const recordSerial = String(
+        record?.serial_number ||
+        record?.identification_number ||
+        record?.equipment_no ||
+        record?.tag_number ||
+        ""
+      ).trim().toLowerCase();
+
+      return (assetId && recordAssetId === assetId) || (assetSerial && recordSerial === assetSerial);
+    })
     .map((record) => ({
       ...record,
       expiryDays: daysUntilDateValue(record?.expiry_date || record?.calibration_expiry_date || record?.due_date),
     }))
     .filter((record) => record.expiryDays !== null)
-    .sort((a, b) => a.expiryDays - b.expiryDays);
+    // Latest/current calibration should drive dashboard status, not old history.
+    .sort((a, b) => b.expiryDays - a.expiryDays);
 
   if (relatedRecords.length) return relatedRecords[0].expiryDays;
 
@@ -737,7 +750,7 @@ function App() {
 
       setAssets(normalizeList(assetsJson, "assets"));
       setSites(normalizeList(sitesJson, "sites"));
-      setCalibrationRecords(normalizeList(calibrationJson, "calibration_records"));
+      setCalibrationRecords(typeof getCurrentCalibrationRecords === "function" ? getCurrentCalibrationRecords(normalizeList(calibrationJson, "calibration_records")) : normalizeList(calibrationJson, "calibration_records"));
       setChecklistRecords(normalizeList(checklistJson, "checklist_records"));
     } catch (error) {
       console.error(error);
@@ -1506,9 +1519,9 @@ function App() {
             <div className="v2Hero">
               <div>
                 <p className="eyebrow">Asset Control Tower</p>
-                <h3>Live Movement • Expiry Risk • Traceability Intelligence</h3>
+                <h3>Operations • Calibration Risk • PM Compliance</h3>
                 <p>
-                  Centralized operational visibility for asset location, expiry attention,
+                  Clean executive visibility for assets, calibration expiry, PM status,
                   movement control, and audit-ready traceability.
                 </p>
 

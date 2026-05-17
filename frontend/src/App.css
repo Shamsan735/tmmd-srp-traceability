@@ -5770,3 +5770,312 @@ th {
   border-color: #FECACA;
   background: #FFF7F7;
 }
+
+/* === TMMD DASHBOARD ACCURACY LAYOUT POLISH START === */
+
+/* Dashboard: cleaner executive SaaS layout */
+.dashboardV2 {
+  display: grid !important;
+  gap: 14px !important;
+  align-content: start !important;
+}
+
+/* Top hero: compact, balanced, professional */
+.v2Hero {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.55fr) minmax(260px, 0.75fr) !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+  padding: 18px 20px !important;
+  min-height: 142px !important;
+  border-radius: 18px !important;
+  background: #FFFFFF !important;
+  border: 1px solid #D9E2EC !important;
+  border-left: 4px solid #14B8A6 !important;
+  box-shadow: 0 10px 24px rgba(16, 42, 67, 0.055) !important;
+}
+
+.v2Hero h3 {
+  font-size: 20px !important;
+  line-height: 1.15 !important;
+  max-width: 760px !important;
+  color: #102A43 !important;
+  letter-spacing: -0.045em !important;
+}
+
+.v2Hero p {
+  font-size: 12.8px !important;
+  line-height: 1.5 !important;
+  color: #526577 !important;
+  max-width: 760px !important;
+}
+
+/* KPI cards: aligned, equal height, minimal */
+.v2KpiGrid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  align-items: stretch !important;
+}
+
+.v2KpiCard,
+.v2KpiGrid > * {
+  min-height: 112px !important;
+  height: 100% !important;
+  padding: 14px 16px !important;
+  border-radius: 16px !important;
+  background: #FFFFFF !important;
+  border: 1px solid #D9E2EC !important;
+  box-shadow: 0 8px 20px rgba(16, 42, 67, 0.045) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+}
+
+.v2KpiHead {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.v2KpiHead span,
+.v2KpiCard span:first-child {
+  color: #6B7280 !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.v2KpiHead b {
+  min-width: 26px !important;
+  height: 26px !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #F0FDFA !important;
+  color: #0F766E !important;
+  border: 1px solid rgba(20, 184, 166, 0.18) !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+}
+
+.v2KpiCard strong,
+.v2KpiGrid > * strong {
+  color: #102A43 !important;
+  font-size: 24px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.055em !important;
+  line-height: 1 !important;
+}
+
+.v2KpiCard p,
+.v2KpiGrid > * p {
+  color: #526577 !important;
+  font-size: 11.8px !important;
+  line-height: 1.35 !important;
+  margin: 0 !important;
+}
+
+/* KPI accent line */
+.v2RiskLine {
+  height: 4px !important;
+  border-radius: 999px !important;
+  margin-top: 10px !important;
+  background: linear-gradient(90deg, #163A5F, #14B8A6) !important;
+  opacity: 0.9 !important;
+}
+
+/* Dashboard panel grid alignment */
+.dashboardV2 .twoColumn,
+.dashboardV2 .pageGrid,
+.dashboardV2 .dashboardGrid {
+  gap: 14px !important;
+  align-items: stretch !important;
+}
+
+.dashboardV2 .twoColumn {
+  grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr) !important;
+}
+
+/* Panels/cards cleaner */
+.dashboardV2 .panel,
+.dashboardV2 .card,
+.dashboardV2 .moduleCard {
+  background: #FFFFFF !important;
+  border: 1px solid #D9E2EC !important;
+  border-radius: 17px !important;
+  box-shadow: 0 8px 22px rgba(16, 42, 67, 0.045) !important;
+  overflow: hidden !important;
+}
+
+.dashboardV2 .panelHeader,
+.dashboardV2 .cardHeader,
+.dashboardV2 .panel > div:first-child,
+.dashboardV2 .card > div:first-child {
+  padding: 13px 15px !important;
+  border-bottom: 1px solid #E9EEF5 !important;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FBFCFE 100%) !important;
+}
+
+.dashboardV2 .panel h3,
+.dashboardV2 .card h3 {
+  font-size: 14.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.03em !important;
+  color: #102A43 !important;
+}
+
+/* Health ring panel more compact */
+.v2HealthWrap {
+  display: grid !important;
+  grid-template-columns: 160px minmax(0, 1fr) !important;
+  gap: 16px !important;
+  align-items: center !important;
+  padding: 14px !important;
+}
+
+.v2HealthRing {
+  width: 142px !important;
+  height: 142px !important;
+  margin: 0 auto !important;
+}
+
+.v2HealthRing strong {
+  font-size: 25px !important;
+}
+
+.v2HealthMetrics {
+  display: grid !important;
+  gap: 9px !important;
+}
+
+.v2HealthMetrics > div {
+  display: grid !important;
+  grid-template-columns: 12px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 10px 12px !important;
+  border: 1px solid #E9EEF5 !important;
+  border-radius: 13px !important;
+  background: #F8FAFC !important;
+}
+
+.v2HealthMetrics p {
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  color: #526577 !important;
+  margin: 0 !important;
+}
+
+.v2HealthMetrics strong {
+  font-size: 15px !important;
+  color: #102A43 !important;
+}
+
+/* PM and calibration action cards */
+.v2ActionStack {
+  display: grid !important;
+  gap: 10px !important;
+  padding: 14px !important;
+}
+
+.v2ActionAlert {
+  display: grid !important;
+  grid-template-columns: 8px minmax(0, 1fr) auto !important;
+  gap: 10px !important;
+  align-items: center !important;
+  padding: 12px 13px !important;
+  border-radius: 14px !important;
+  border: 1px solid #E9EEF5 !important;
+  background: #F8FAFC !important;
+  box-shadow: none !important;
+}
+
+.v2ActionAlert span {
+  width: 8px !important;
+  height: 38px !important;
+  border-radius: 999px !important;
+  background: #14B8A6 !important;
+}
+
+.v2ActionAlert small {
+  color: #6B7280 !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.v2ActionAlert strong {
+  color: #102A43 !important;
+  font-size: 21px !important;
+  font-weight: 900 !important;
+}
+
+.v2ActionAlert p {
+  grid-column: 2 / -1 !important;
+  margin: -4px 0 0 0 !important;
+  color: #526577 !important;
+  font-size: 11.8px !important;
+}
+
+/* Quick trace and lower cards */
+.dashboardV2 input,
+.dashboardV2 select,
+.dashboardV2 textarea {
+  border-radius: 11px !important;
+  border: 1px solid #D9E2EC !important;
+  background: #FFFFFF !important;
+  min-height: 38px !important;
+  font-size: 13px !important;
+}
+
+.dashboardV2 button {
+  border-radius: 11px !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+}
+
+/* Tables inside dashboard */
+.dashboardV2 .tableWrap {
+  border-radius: 14px !important;
+  overflow: auto !important;
+}
+
+.dashboardV2 th {
+  background: #F8FAFC !important;
+  color: #375A7A !important;
+  font-size: 10px !important;
+}
+
+.dashboardV2 td {
+  font-size: 12px !important;
+  padding: 9px 10px !important;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .v2KpiGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .v2Hero,
+  .dashboardV2 .twoColumn {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .v2KpiGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .v2HealthWrap {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* === TMMD DASHBOARD ACCURACY LAYOUT POLISH END === */
