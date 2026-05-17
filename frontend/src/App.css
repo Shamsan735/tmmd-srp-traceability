@@ -8362,3 +8362,149 @@ td:has(.siteMasterActionForceV2) {
 }
 
 /* === FINAL DASHBOARD UTILITY POLISH END === */
+
+/* === FINAL MANAGEMENT DASHBOARD CLEANUP START === */
+
+/* Final management dashboard cleanup - CSS only */
+
+/* Cloud Sync: make it a small software status widget, no cut text/buttons */
+.dashboardV2 .v2Hero .v2SyncCard {
+  width: 300px !important;
+  min-width: 300px !important;
+  max-width: 300px !important;
+  height: 92px !important;
+  min-height: 92px !important;
+  max-height: 92px !important;
+  padding: 13px 15px !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
+  display: grid !important;
+  grid-template-rows: auto auto !important;
+  align-content: center !important;
+  gap: 8px !important;
+}
+
+.dashboardV2 .v2Hero .v2SyncTop {
+  display: flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+}
+
+.dashboardV2 .v2Hero .v2SyncTop small {
+  font-size: 9.5px !important;
+  letter-spacing: 0.13em !important;
+  color: #163A5F !important;
+}
+
+.dashboardV2 .v2Hero .v2SyncCard strong {
+  font-size: 22px !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  color: #102A43 !important;
+}
+
+/* Hide long text and pills in Cloud Sync card */
+.dashboardV2 .v2Hero .v2SyncCard p,
+.dashboardV2 .v2Hero .v2SyncCard .v2SyncPills,
+.dashboardV2 .v2Hero .v2SyncCard .v2SyncPills span {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Add clean live indicator text */
+.dashboardV2 .v2Hero .v2SyncCard strong::after {
+  content: "  • Live workspace";
+  color: #0F766E;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+}
+
+/* Hero slightly cleaner and tighter */
+.dashboardV2 .v2Hero {
+  height: 126px !important;
+  min-height: 126px !important;
+  padding: 14px 16px !important;
+  grid-template-columns: minmax(0, 1fr) 315px !important;
+  gap: 14px !important;
+}
+
+.dashboardV2 .v2Hero h3 {
+  font-size: 24px !important;
+  line-height: 1.04 !important;
+}
+
+.dashboardV2 .v2Hero p {
+  font-size: 11.2px !important;
+  line-height: 1.35 !important;
+  max-width: 760px !important;
+}
+
+/* Quick Trace final placement: professional utility strip */
+.dashboardV2 .v2QuickTraceDock {
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+  margin-top: 0 !important;
+}
+
+.dashboardV2 .v2QuickTraceDock .panel {
+  min-height: 118px !important;
+  max-height: 145px !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
+}
+
+.dashboardV2 .v2QuickTraceDock .panelHeader {
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 10px 13px !important;
+}
+
+.dashboardV2 .v2QuickTraceDock .panelHeader h3 {
+  font-size: 13.5px !important;
+}
+
+.dashboardV2 .v2QuickTraceDock p {
+  font-size: 11px !important;
+  margin: 8px 12px 8px !important;
+  color: #526577 !important;
+}
+
+/* Try to make quick trace input/button row compact */
+.dashboardV2 .v2QuickTraceDock input {
+  min-height: 38px !important;
+  height: 38px !important;
+  border-radius: 11px !important;
+}
+
+.dashboardV2 .v2QuickTraceDock button {
+  min-height: 38px !important;
+  height: 38px !important;
+  border-radius: 11px !important;
+}
+
+/* Final visual density */
+.dashboardV2 {
+  gap: 9px !important;
+}
+
+.dashboardV2 .v2KpiGrid {
+  margin-top: 0 !important;
+}
+
+.dashboardV2 .v2MainGrid {
+  margin-top: 0 !important;
+}
+
+/* Prevent bottom card content from looking oversized */
+.dashboardV2 .panel {
+  box-shadow: 0 10px 24px rgba(16, 42, 67, 0.055) !important;
+}
+
+/* === FINAL MANAGEMENT DASHBOARD CLEANUP END === */
