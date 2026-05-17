@@ -533,6 +533,7 @@ export default {
         assetsCreatedOrUpdated: 0,
         pmRecordsCreated: 0,
         calibrationRecordsCreated: 0,
+        calibrationPmRecordsCreated: 0,
         duplicatePmSkipped: 0,
         duplicateCalibrationSkipped: 0,
       };
@@ -637,6 +638,45 @@ export default {
           ).run();
 
           summary.calibrationRecordsCreated += 1;
+          }
+
+          const calibrationPmDate = normalizeImportDate(record.calibration_date) || new Date().toISOString().slice(0, 10);
+          const calibrationPmName = "Imported Calibration Master PM / Inspection";
+
+          const existingCalibrationPm: any = await env.DB.prepare(
+            "SELECT id FROM checklist_records WHERE asset_id = ? AND checklist_type = 'PM' AND checklist_name = ? AND checklist_date = ? LIMIT 1"
+          ).bind(assetId, calibrationPmName, calibrationPmDate).first();
+
+          if (existingCalibrationPm?.id) {
+            summary.duplicatePmSkipped += 1;
+          } else {
+            await env.DB.prepare(
+              `INSERT INTO checklist_records (
+                asset_id,
+                checklist_type,
+                checklist_name,
+                checklist_date,
+                result,
+                performed_by,
+                next_due_date,
+                pm_frequency,
+                attachment_ref,
+                remarks
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            ).bind(
+              assetId,
+              "PM",
+              calibrationPmName,
+              calibrationPmDate,
+              normalizeImportText(record.status) || "Imported",
+              "Excel Import",
+              normalizeImportDate(record.expiry_date),
+              null,
+              normalizeImportText(record.file_name) || null,
+              normalizeImportText(record.remarks) || location || null
+            ).run();
+
+            summary.calibrationPmRecordsCreated += 1;
           }
         }
       }
