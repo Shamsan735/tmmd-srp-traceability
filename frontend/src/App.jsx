@@ -198,6 +198,56 @@ function statusFromDays(days) {
   return { label: "Valid", className: "success" };
 }
 
+function getPmDashboardStatus(asset) {
+  const statusText = String(
+    asset?.pm_status ||
+    asset?.pmStatus ||
+    asset?.checklist_status ||
+    asset?.status ||
+    ""
+  ).toLowerCase();
+
+  const frequencyText = String(
+    asset?.pm_frequency ||
+    asset?.frequency ||
+    asset?.maintenance_frequency ||
+    ""
+  ).toLowerCase();
+
+  const nextPmDate =
+    asset?.next_pm_due_date ||
+    asset?.next_pm_due ||
+    asset?.pm_due_date ||
+    asset?.next_pm_date ||
+    asset?.next_due_date;
+
+  const lastPmDate =
+    asset?.last_pm_date ||
+    asset?.pm_date ||
+    asset?.inspection_date ||
+    asset?.checklist_date;
+
+  const dueDays = daysUntilDateValue(nextPmDate);
+
+  if (statusText.includes("overdue") || statusText.includes("expired") || (dueDays !== null && dueDays < 0)) {
+    return "overdue";
+  }
+
+  if (dueDays !== null && dueDays <= 10) {
+    return "dueSoon";
+  }
+
+  if (statusText.includes("valid") || statusText.includes("completed") || statusText.includes("ok") || (dueDays !== null && dueDays > 10)) {
+    return "valid";
+  }
+
+  if (!frequencyText || frequencyText.includes("not applicable") || (!nextPmDate && !lastPmDate)) {
+    return "missing";
+  }
+
+  return "missing";
+}
+
 function csvSafe(value) {
   const text = value === null || value === undefined ? "" : String(value);
   return `"${text.replace(/"/g, '""')}"`;
@@ -586,6 +636,11 @@ function App() {
 
     const noExpiry = assets.filter((asset) => getAssetCalibrationDays(asset, calibrationRecords) === null);
 
+    const pmValid = assets.filter((asset) => getPmDashboardStatus(asset) === "valid");
+    const pmDueSoon = assets.filter((asset) => getPmDashboardStatus(asset) === "dueSoon");
+    const pmOverdue = assets.filter((asset) => getPmDashboardStatus(asset) === "overdue");
+    const pmMissing = assets.filter((asset) => getPmDashboardStatus(asset) === "missing");
+
     const distributionMap = new Map();
     assets.forEach((asset) => {
       const siteName = getCurrentSiteName(asset, sites);
@@ -601,7 +656,7 @@ function App() {
       .filter((asset) => asset.dashboardExpiryDays !== null)
       .sort((a, b) => a.dashboardExpiryDays - b.dashboardExpiryDays);
 
-    return { critical, warning, valid, noExpiry, distribution, expirySorted };
+    return { critical, warning, valid, noExpiry, distribution, expirySorted, pmValid, pmDueSoon, pmOverdue, pmMissing };
   }, [assets, sites, calibrationRecords]);
 
 
@@ -1196,27 +1251,29 @@ function App() {
                     <div><span className="v2Dot success" /><p>Valid Calibration</p><strong>{dashboardData.valid.length}</strong></div>
                     <div><span className="v2Dot warning" /><p>Warning Calibration</p><strong>{dashboardData.warning.length}</strong></div>
                     <div><span className="v2Dot danger" /><p>Critical Calibration</p><strong>{dashboardData.critical.length}</strong></div>
-                    <div><span className="v2Dot neutral" /><p>Missing Calibration</p><strong>{dashboardData.noExpiry?.length || 0}</strong></div>
                   </div>
                 </div>
               </Panel>
 
-              <Panel title="Critical Action Center" action="Priority view">
-                <div className="v2ActionCenter">
-                  <div className="v2ActionAlert danger">
-                    <span>Immediate Attention</span>
-                    <strong>{dashboardData.critical.length}</strong>
-                    <p>asset(s) in critical expiry range</p>
+              <Panel title="PM Compliance Status" action="Auto status">
+                <div className="v2ActionStack">
+                  <div className="v2ActionAlert success">
+                    <span />
+                    <small>PM VALID</small>
+                    <strong>{dashboardData.pmValid?.length || 0}</strong>
+                    <p>asset(s) currently within PM schedule</p>
                   </div>
                   <div className="v2ActionAlert warning">
-                    <span>Upcoming Attention</span>
-                    <strong>{dashboardData.warning.length}</strong>
-                    <p>asset(s) approaching expiry</p>
+                    <span />
+                    <small>DUE WITHIN 10 DAYS</small>
+                    <strong>{dashboardData.pmDueSoon?.length || 0}</strong>
+                    <p>asset(s) requiring upcoming PM attention</p>
                   </div>
-                  <div className="v2ActionAlert success">
-                    <span>Operational Coverage</span>
-                    <strong>{sites.length}</strong>
-                    <p>active location(s) monitored</p>
+                  <div className="v2ActionAlert danger">
+                    <span />
+                    <small>OVERDUE PM</small>
+                    <strong>{dashboardData.pmOverdue?.length || 0}</strong>
+                    <p>asset(s) past planned PM due date</p>
                   </div>
                 </div>
               </Panel>
@@ -1256,27 +1313,28 @@ function App() {
                 </div>
               </Panel>
 
-              <Panel title="Priority Expiry Watchlist" action={`${dashboardData.expirySorted.slice(0, 6).length} items`}>
-                <div className="v2WatchList">
-                  {dashboardData.expirySorted.slice(0, 6).map((asset) => {
-                    const days = asset.dashboardExpiryDays ?? getAssetCalibrationDays(asset, calibrationRecords);
-                    const status = statusFromDays(days);
-                    return (
-                      <div className="v2WatchItem" key={pickId(asset)}>
-                        <div className={`v2WatchIcon ${status.className}`}>
-                          {status.className === "danger" ? "!" : status.className === "warning" ? "W" : "OK"}
-                        </div>
-                        <div>
-                          <strong>{getAssetName(asset)}</strong>
-                          <span>{getAssetSerial(asset)} • {getCurrentSiteName(asset, sites)}</span>
-                        </div>
-                        <span className={`badge ${status.className}`}>{days === null ? "N/A" : `${days} days`}</span>
-                      </div>
-                    );
-                  })}
-                  {!dashboardData.expirySorted.length && <Empty text="No expiry data available." />}
-                </div>
-              </Panel>
+              <Panel title="Calibration Due Focus" action="Less than 30 days">
+                  <div className="v2ActionStack">
+                    <div className="v2ActionAlert danger">
+                      <span />
+                      <small>CRITICAL CALIBRATION</small>
+                      <strong>{dashboardData.critical.length}</strong>
+                      <p>calibration item(s) due in 7 days or overdue</p>
+                    </div>
+                    <div className="v2ActionAlert warning">
+                      <span />
+                      <small>WARNING CALIBRATION</small>
+                      <strong>{dashboardData.warning.length}</strong>
+                      <p>calibration item(s) due within 30 days</p>
+                    </div>
+                    <div className="v2ActionAlert success">
+                      <span />
+                      <small>VALID CALIBRATION</small>
+                      <strong>{dashboardData.valid.length}</strong>
+                      <p>calibration item(s) currently valid</p>
+                    </div>
+                  </div>
+                </Panel>
             </div>
 
             <div className="v2BottomGrid">
@@ -1290,15 +1348,7 @@ function App() {
                 <AssetTable assets={filteredAssets.slice(0, 5)} sites={sites} compact />
               </Panel>
 
-              <Panel title="Executive Quick Actions" action="Control panel">
-                <div className="v2QuickActions">
-                  <button onClick={() => setActiveTab("movement")}><strong>Register Movement</strong><span>Transfer asset and update current location</span></button>
-                  <button onClick={() => setActiveTab("traceability")}><strong>Trace Asset</strong><span>Open movement history and audit trail</span></button>
-                  <button onClick={() => setActiveTab("reports")}><strong>Download Reports</strong><span>Export asset, expiry, and location reports</span></button>
-                  <button onClick={() => setActiveTab("assets")}><strong>Asset Master</strong><span>Review complete asset register</span></button>
-                  <button onClick={() => setActiveTab("sites")}><strong>Site Master</strong><span>Add, edit, activate, and deactivate locations</span></button>
-                </div>
-              </Panel>
+              
             </div>
           </section>
         )}
