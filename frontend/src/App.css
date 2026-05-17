@@ -3630,3 +3630,2111 @@ tbody tr:hover {
   }
 }
 
+/* === TMMD SRP ENTERPRISE UI REDESIGN START === */
+:root {
+  --tmmd-navy: #163A5F;
+  --tmmd-navy-dark: #0B1F33;
+  --tmmd-text: #102A43;
+  --tmmd-teal: #14B8A6;
+  --tmmd-bg: #F5F7FA;
+  --tmmd-card: #FFFFFF;
+  --tmmd-border: #D9E2EC;
+  --tmmd-muted: #6B7280;
+  --tmmd-soft: #EEF4F8;
+  --tmmd-shadow: 0 18px 45px rgba(16, 42, 67, 0.08);
+  --tmmd-shadow-soft: 0 10px 28px rgba(16, 42, 67, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--tmmd-bg) !important;
+  color: var(--tmmd-text) !important;
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif !important;
+  letter-spacing: -0.01em;
+}
+
+/* Main shell */
+.app,
+.appShell,
+.dashboardShell,
+.layout,
+.mainLayout {
+  background: var(--tmmd-bg) !important;
+  color: var(--tmmd-text) !important;
+}
+
+.main,
+.content,
+.mainContent,
+.pageContent,
+.dashboardContent {
+  background: var(--tmmd-bg) !important;
+}
+
+/* Premium deep navy sidebar */
+.sidebar,
+.premiumSidebar {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(20, 184, 166, 0.20), transparent 34%),
+    linear-gradient(180deg, #163A5F 0%, #102A43 54%, #0B1F33 100%) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.10) !important;
+  box-shadow: 22px 0 50px rgba(16, 42, 67, 0.18) !important;
+  color: #FFFFFF !important;
+}
+
+.sidebar *,
+.premiumSidebar * {
+  color: inherit;
+}
+
+.sidebarTopGlow {
+  background: radial-gradient(circle, rgba(20, 184, 166, 0.35), transparent 65%) !important;
+  opacity: 0.9 !important;
+}
+
+.sidebar h1,
+.sidebar h2,
+.sidebar h3,
+.sidebar .brandTitle,
+.sidebar .logoText,
+.sidebar .appTitle {
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.sidebar p,
+.sidebar span,
+.sidebar small,
+.sidebar .brandSub,
+.sidebar .sidebarSubtitle {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.sidebarStatusStrip {
+  background: rgba(255, 255, 255, 0.09) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 18px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.navList,
+.premiumNav {
+  gap: 8px !important;
+}
+
+.navSectionLabel {
+  color: rgba(255, 255, 255, 0.54) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  margin: 18px 0 8px !important;
+}
+
+.navButton {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+  border: 1px solid transparent !important;
+  border-radius: 15px !important;
+  padding: 12px 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  transition: all 0.18s ease !important;
+}
+
+.navButton:hover {
+  background: rgba(255, 255, 255, 0.09) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #FFFFFF !important;
+  transform: translateX(2px);
+}
+
+.navButton.active {
+  background: linear-gradient(135deg, rgba(20, 184, 166, 0.24), rgba(255, 255, 255, 0.13)) !important;
+  border-color: rgba(20, 184, 166, 0.45) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.14) !important;
+}
+
+.navButton.active .navActiveRail,
+.navActiveRail {
+  background: var(--tmmd-teal) !important;
+  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.16), 0 0 20px rgba(20, 184, 166, 0.45) !important;
+}
+
+.sidebarFooter,
+.premiumFooter {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  border-radius: 18px !important;
+}
+
+/* Global top page header */
+.topbar,
+.pageHeader,
+.globalHeader,
+.moduleTopbar {
+  background:
+    linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%) !important;
+  border: 1px solid var(--tmmd-border) !important;
+  border-radius: 24px !important;
+  box-shadow: var(--tmmd-shadow-soft) !important;
+  color: var(--tmmd-text) !important;
+}
+
+.topbar h1,
+.topbar h2,
+.pageHeader h1,
+.pageHeader h2,
+.globalHeader h1,
+.globalHeader h2,
+.moduleTopbar h1,
+.moduleTopbar h2 {
+  color: var(--tmmd-text) !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.045em !important;
+  line-height: 1.08 !important;
+}
+
+.topbar p,
+.pageHeader p,
+.globalHeader p,
+.moduleTopbar p {
+  color: var(--tmmd-muted) !important;
+  font-weight: 500 !important;
+  line-height: 1.6 !important;
+}
+
+/* Eyebrow / muted labels stronger */
+.eyebrow,
+.kicker,
+.overline,
+.label,
+.badgeLabel,
+.sectionLabel,
+.cardEyebrow,
+.moduleEyebrow,
+.headerEyebrow {
+  color: #375A7A !important;
+  font-size: 11px !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.11em !important;
+  text-transform: uppercase !important;
+}
+
+/* All module / section header cards */
+.sectionHeader,
+.section-header,
+.headerCard,
+.header-card,
+.moduleHeader,
+.module-header,
+.panelHeader,
+.panel-header,
+.reportHeader,
+.importHeader,
+.settingsHeader,
+.assetHeader,
+.calibrationHeader,
+.pmHeader,
+.repairHeader,
+.traceHeader {
+  background:
+    linear-gradient(135deg, #FFFFFF 0%, #F8FBFD 100%) !important;
+  border: 1px solid var(--tmmd-border) !important;
+  border-radius: 22px !important;
+  box-shadow: var(--tmmd-shadow-soft) !important;
+  color: var(--tmmd-text) !important;
+}
+
+.sectionHeader h1,
+.sectionHeader h2,
+.sectionHeader h3,
+.section-header h1,
+.section-header h2,
+.section-header h3,
+.headerCard h1,
+.headerCard h2,
+.headerCard h3,
+.header-card h1,
+.header-card h2,
+.header-card h3,
+.moduleHeader h1,
+.moduleHeader h2,
+.moduleHeader h3,
+.module-header h1,
+.module-header h2,
+.module-header h3,
+.panelHeader h1,
+.panelHeader h2,
+.panelHeader h3,
+.panel-header h1,
+.panel-header h2,
+.panel-header h3,
+.reportHeader h3,
+.importHeader h3,
+.settingsHeader h3 {
+  color: var(--tmmd-text) !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.16 !important;
+}
+
+.sectionHeader p,
+.section-header p,
+.headerCard p,
+.header-card p,
+.moduleHeader p,
+.module-header p,
+.panelHeader p,
+.panel-header p,
+.reportHeader p,
+.importHeader p,
+.settingsHeader p {
+  color: var(--tmmd-muted) !important;
+  font-weight: 500 !important;
+  line-height: 1.65 !important;
+}
+
+/* Cards / panels / tables */
+.card,
+.panel,
+.statCard,
+.metricCard,
+.reportCard,
+.importCard,
+.settingsCard,
+.formCard,
+.tableCard,
+.moduleCard,
+.kpiCard {
+  background: var(--tmmd-card) !important;
+  border: 1px solid var(--tmmd-border) !important;
+  border-radius: 22px !important;
+  box-shadow: var(--tmmd-shadow-soft) !important;
+  color: var(--tmmd-text) !important;
+}
+
+.card h1,
+.card h2,
+.card h3,
+.panel h1,
+.panel h2,
+.panel h3,
+.statCard h1,
+.statCard h2,
+.statCard h3,
+.metricCard h1,
+.metricCard h2,
+.metricCard h3,
+.reportCard h1,
+.reportCard h2,
+.reportCard h3,
+.importCard h1,
+.importCard h2,
+.importCard h3,
+.settingsCard h1,
+.settingsCard h2,
+.settingsCard h3,
+.formCard h1,
+.formCard h2,
+.formCard h3,
+.tableCard h1,
+.tableCard h2,
+.tableCard h3,
+.moduleCard h1,
+.moduleCard h2,
+.moduleCard h3 {
+  color: var(--tmmd-text) !important;
+  font-weight: 800 !important;
+}
+
+.card p,
+.panel p,
+.statCard p,
+.metricCard p,
+.reportCard p,
+.importCard p,
+.settingsCard p,
+.formCard p,
+.tableCard p,
+.moduleCard p,
+td,
+th {
+  color: var(--tmmd-muted) !important;
+}
+
+th {
+  color: #375A7A !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  background: #F8FAFC !important;
+}
+
+table {
+  border-color: var(--tmmd-border) !important;
+}
+
+tr {
+  border-color: var(--tmmd-border) !important;
+}
+
+/* Forms */
+input,
+select,
+textarea {
+  background: #FFFFFF !important;
+  color: var(--tmmd-text) !important;
+  border: 1px solid var(--tmmd-border) !important;
+  border-radius: 14px !important;
+  font-weight: 600 !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--tmmd-teal) !important;
+  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.14) !important;
+  outline: none !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #8A99AA !important;
+}
+
+/* Buttons */
+button,
+.primaryButton,
+.ghostButton,
+.secondaryButton {
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif !important;
+}
+
+.primaryButton,
+button.primaryButton,
+button[type="submit"] {
+  background: linear-gradient(135deg, var(--tmmd-teal), #0F9F91) !important;
+  border: 1px solid rgba(20, 184, 166, 0.55) !important;
+  color: #FFFFFF !important;
+  border-radius: 14px !important;
+  font-weight: 800 !important;
+  box-shadow: 0 12px 24px rgba(20, 184, 166, 0.22) !important;
+}
+
+.ghostButton,
+.secondaryButton {
+  background: #FFFFFF !important;
+  border: 1px solid var(--tmmd-border) !important;
+  color: var(--tmmd-text) !important;
+  border-radius: 14px !important;
+  font-weight: 800 !important;
+}
+
+.ghostButton:hover,
+.secondaryButton:hover {
+  border-color: rgba(20, 184, 166, 0.45) !important;
+  color: #0F766E !important;
+  box-shadow: 0 8px 20px rgba(16, 42, 67, 0.08) !important;
+}
+
+/* Status / badges */
+.badge,
+.statusBadge,
+.pill,
+.tag,
+.chip {
+  border-radius: 999px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
+  border: 1px solid rgba(20, 184, 166, 0.22) !important;
+  background: rgba(20, 184, 166, 0.10) !important;
+  color: #0F766E !important;
+}
+
+/* Settings / reports / import readability */
+.settingsGrid,
+.reportGrid,
+.importGrid,
+.dashboardGrid,
+.kpiGrid {
+  gap: 18px !important;
+}
+
+.settingsCheck,
+.checkItem,
+.permissionItem {
+  background: #FFFFFF !important;
+  border: 1px solid var(--tmmd-border) !important;
+  border-radius: 16px !important;
+  color: var(--tmmd-text) !important;
+}
+
+.messageBox,
+.alertBox,
+.infoBox {
+  background: #EFFDFB !important;
+  border: 1px solid rgba(20, 184, 166, 0.28) !important;
+  color: #0F766E !important;
+  border-radius: 18px !important;
+  font-weight: 700 !important;
+}
+
+/* Remove washed-out blue/beige feel */
+[class*="gradient"],
+[class*="hero"],
+[class*="banner"] {
+  border-color: var(--tmmd-border);
+}
+
+a {
+  color: #0F766E !important;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #E9EEF4;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #B8C6D4;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8EA3B7;
+}
+/* === TMMD SRP ENTERPRISE UI REDESIGN END === */
+
+/* === TMMD SIDEBAR VISIBILITY FIX START === */
+.sidebar,
+.premiumSidebar {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.navList,
+.premiumNav {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding-right: 6px !important;
+  padding-bottom: 14px !important;
+}
+
+.navSectionLabel {
+  margin: 12px 0 6px !important;
+  font-size: 10px !important;
+}
+
+.navButton {
+  min-height: 42px !important;
+  padding: 9px 11px !important;
+  border-radius: 13px !important;
+  flex-shrink: 0 !important;
+}
+
+.sidebarFooter,
+.premiumFooter {
+  flex-shrink: 0 !important;
+  margin-top: 10px !important;
+}
+
+.sidebarStatusStrip {
+  flex-shrink: 0 !important;
+}
+
+.premiumNav::-webkit-scrollbar,
+.navList::-webkit-scrollbar {
+  width: 5px !important;
+}
+
+.premiumNav::-webkit-scrollbar-thumb,
+.navList::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-radius: 999px !important;
+}
+/* === TMMD SIDEBAR VISIBILITY FIX END === */
+
+/* === TMMD SOFT ENTERPRISE HEADER REDESIGN START === */
+
+/* HARD RESET: remove faded blue/beige banner look */
+.topbar,
+.pageHeader,
+.globalHeader,
+.moduleTopbar,
+.sectionHeader,
+.section-header,
+.headerCard,
+.header-card,
+.moduleHeader,
+.module-header,
+.panelHeader,
+.panel-header,
+.settingsHeader,
+.reportHeader,
+.importHeader,
+.assetHeader,
+.calibrationHeader,
+.pmHeader,
+.repairHeader,
+.traceHeader,
+[class*="Header"],
+[class*="header"] {
+  color: #102A43 !important;
+}
+
+/* Main module header = soft enterprise software card */
+.settingsHeader,
+.reportHeader,
+.importHeader,
+.assetHeader,
+.calibrationHeader,
+.pmHeader,
+.repairHeader,
+.traceHeader,
+.sectionHeader,
+.headerCard,
+.moduleHeader,
+.panelHeader {
+  position: relative !important;
+  overflow: hidden !important;
+  background: #FFFFFF !important;
+  background-image: none !important;
+  border: 1px solid #D9E2EC !important;
+  border-left: 6px solid #14B8A6 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 10px 28px rgba(16, 42, 67, 0.07) !important;
+  padding: 22px 24px !important;
+}
+
+/* Remove old glow / faded overlay inside headers */
+.settingsHeader::before,
+.settingsHeader::after,
+.reportHeader::before,
+.reportHeader::after,
+.importHeader::before,
+.importHeader::after,
+.assetHeader::before,
+.assetHeader::after,
+.calibrationHeader::before,
+.calibrationHeader::after,
+.pmHeader::before,
+.pmHeader::after,
+.repairHeader::before,
+.repairHeader::after,
+.traceHeader::before,
+.traceHeader::after,
+.sectionHeader::before,
+.sectionHeader::after,
+.headerCard::before,
+.headerCard::after,
+.moduleHeader::before,
+.moduleHeader::after {
+  opacity: 0 !important;
+  display: none !important;
+}
+
+/* Header eyebrow */
+.settingsHeader small,
+.settingsHeader .eyebrow,
+.settingsHeader [class*="eyebrow"],
+.reportHeader small,
+.reportHeader .eyebrow,
+.reportHeader [class*="eyebrow"],
+.importHeader small,
+.importHeader .eyebrow,
+.importHeader [class*="eyebrow"],
+.sectionHeader small,
+.sectionHeader .eyebrow,
+.sectionHeader [class*="eyebrow"],
+.headerCard small,
+.headerCard .eyebrow,
+.headerCard [class*="eyebrow"],
+.moduleHeader small,
+.moduleHeader .eyebrow,
+.moduleHeader [class*="eyebrow"] {
+  color: #163A5F !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.13em !important;
+  text-transform: uppercase !important;
+  opacity: 1 !important;
+}
+
+/* Header title */
+.settingsHeader h1,
+.settingsHeader h2,
+.settingsHeader h3,
+.reportHeader h1,
+.reportHeader h2,
+.reportHeader h3,
+.importHeader h1,
+.importHeader h2,
+.importHeader h3,
+.assetHeader h1,
+.assetHeader h2,
+.assetHeader h3,
+.calibrationHeader h1,
+.calibrationHeader h2,
+.calibrationHeader h3,
+.pmHeader h1,
+.pmHeader h2,
+.pmHeader h3,
+.repairHeader h1,
+.repairHeader h2,
+.repairHeader h3,
+.traceHeader h1,
+.traceHeader h2,
+.traceHeader h3,
+.sectionHeader h1,
+.sectionHeader h2,
+.sectionHeader h3,
+.headerCard h1,
+.headerCard h2,
+.headerCard h3,
+.moduleHeader h1,
+.moduleHeader h2,
+.moduleHeader h3 {
+  color: #102A43 !important;
+  font-size: clamp(24px, 2.1vw, 34px) !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.045em !important;
+  line-height: 1.08 !important;
+  margin-bottom: 8px !important;
+  text-shadow: none !important;
+}
+
+/* Header paragraph */
+.settingsHeader p,
+.reportHeader p,
+.importHeader p,
+.assetHeader p,
+.calibrationHeader p,
+.pmHeader p,
+.repairHeader p,
+.traceHeader p,
+.sectionHeader p,
+.headerCard p,
+.moduleHeader p {
+  color: #526577 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.55 !important;
+  max-width: 850px !important;
+  text-shadow: none !important;
+}
+
+/* Header stat cards on right side */
+.settingsHeader > div:last-child,
+.reportHeader > div:last-child,
+.importHeader > div:last-child,
+.sectionHeader > div:last-child,
+.headerCard > div:last-child,
+.moduleHeader > div:last-child {
+  gap: 14px !important;
+}
+
+/* Force stat tiles clean and readable */
+.settingsHeader [class*="stat"],
+.settingsHeader [class*="metric"],
+.settingsHeader [class*="tile"],
+.reportHeader [class*="stat"],
+.reportHeader [class*="metric"],
+.reportHeader [class*="tile"],
+.importHeader [class*="stat"],
+.importHeader [class*="metric"],
+.importHeader [class*="tile"],
+.sectionHeader [class*="stat"],
+.sectionHeader [class*="metric"],
+.sectionHeader [class*="tile"],
+.headerCard [class*="stat"],
+.headerCard [class*="metric"],
+.headerCard [class*="tile"],
+.moduleHeader [class*="stat"],
+.moduleHeader [class*="metric"],
+.moduleHeader [class*="tile"] {
+  background: #F8FAFC !important;
+  background-image: none !important;
+  border: 1px solid #D9E2EC !important;
+  border-radius: 18px !important;
+  box-shadow: none !important;
+  color: #102A43 !important;
+  min-width: 145px !important;
+  padding: 18px 20px !important;
+  text-shadow: none !important;
+}
+
+/* Any text inside header stat cards */
+.settingsHeader [class*="stat"] *,
+.settingsHeader [class*="metric"] *,
+.settingsHeader [class*="tile"] *,
+.reportHeader [class*="stat"] *,
+.reportHeader [class*="metric"] *,
+.reportHeader [class*="tile"] *,
+.importHeader [class*="stat"] *,
+.importHeader [class*="metric"] *,
+.importHeader [class*="tile"] *,
+.sectionHeader [class*="stat"] *,
+.sectionHeader [class*="metric"] *,
+.sectionHeader [class*="tile"] *,
+.headerCard [class*="stat"] *,
+.headerCard [class*="metric"] *,
+.headerCard [class*="tile"] *,
+.moduleHeader [class*="stat"] *,
+.moduleHeader [class*="metric"] *,
+.moduleHeader [class*="tile"] * {
+  color: #102A43 !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
+
+/* Stat label */
+.settingsHeader [class*="stat"] small,
+.settingsHeader [class*="metric"] small,
+.settingsHeader [class*="tile"] small,
+.reportHeader [class*="stat"] small,
+.reportHeader [class*="metric"] small,
+.reportHeader [class*="tile"] small,
+.importHeader [class*="stat"] small,
+.importHeader [class*="metric"] small,
+.importHeader [class*="tile"] small,
+.sectionHeader [class*="stat"] small,
+.sectionHeader [class*="metric"] small,
+.sectionHeader [class*="tile"] small,
+.headerCard [class*="stat"] small,
+.headerCard [class*="metric"] small,
+.headerCard [class*="tile"] small,
+.moduleHeader [class*="stat"] small,
+.moduleHeader [class*="metric"] small,
+.moduleHeader [class*="tile"] small {
+  color: #6B7280 !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+
+/* Stat number/value */
+.settingsHeader [class*="stat"] strong,
+.settingsHeader [class*="metric"] strong,
+.settingsHeader [class*="tile"] strong,
+.reportHeader [class*="stat"] strong,
+.reportHeader [class*="metric"] strong,
+.reportHeader [class*="tile"] strong,
+.importHeader [class*="stat"] strong,
+.importHeader [class*="metric"] strong,
+.importHeader [class*="tile"] strong,
+.sectionHeader [class*="stat"] strong,
+.sectionHeader [class*="metric"] strong,
+.sectionHeader [class*="tile"] strong,
+.headerCard [class*="stat"] strong,
+.headerCard [class*="metric"] strong,
+.headerCard [class*="tile"] strong,
+.moduleHeader [class*="stat"] strong,
+.moduleHeader [class*="metric"] strong,
+.moduleHeader [class*="tile"] strong {
+  color: #163A5F !important;
+  font-size: 28px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.05em !important;
+}
+
+/* Small teal professional accent inside header */
+.settingsHeader::marker,
+.reportHeader::marker,
+.importHeader::marker {
+  color: #14B8A6 !important;
+}
+
+/* Make all content feel software-like not landing-page-like */
+body,
+button,
+input,
+select,
+textarea {
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif !important;
+}
+
+main,
+.main,
+.content,
+.mainContent,
+.pageContent {
+  background: #F5F7FA !important;
+}
+
+/* Cleaner spacing below header */
+.settingsHeader + *,
+.reportHeader + *,
+.importHeader + *,
+.assetHeader + *,
+.calibrationHeader + *,
+.pmHeader + *,
+.repairHeader + *,
+.traceHeader + *,
+.sectionHeader + *,
+.headerCard + *,
+.moduleHeader + * {
+  margin-top: 18px !important;
+}
+
+/* === TMMD SOFT ENTERPRISE HEADER REDESIGN END === */
+
+/* === TMMD TRUE SOFTWARE UI PATCH START === */
+
+/* Real app background */
+body {
+  background: #F5F7FA !important;
+  color: #102A43 !important;
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif !important;
+  -webkit-font-smoothing: antialiased !important;
+}
+
+.mainArea {
+  background: #F5F7FA !important;
+  padding: 22px !important;
+}
+
+/* Topbar should feel like software toolbar, not hero banner */
+.topbar {
+  background: #FFFFFF !important;
+  border: 1px solid #D9E2EC !important;
+  border-radius: 18px !important;
+  padding: 16px 18px !important;
+  box-shadow: 0 8px 24px rgba(16, 42, 67, 0.06) !important;
+  min-height: auto !important;
+}
+
+.topbar h2 {
+  color: #102A43 !important;
+  font-size: 22px !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.04em !important;
+  margin: 3px 0 !important;
+  line-height: 1.15 !important;
+}
+
+.topbar .eyebrow {
+  color: #526577 !important;
+  font-size: 11px !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.08em !important;
+  opacity: 1 !important;
+}
+
+/* REAL SECTION HEADER CARD: Settings, Excel Import, Reports, modules */
+.dashboardIntro {
+  background: #FFFFFF !important;
+  background-image: none !important;
+  border: 1px solid #D9E2EC !important;
+  border-left: 5px solid #14B8A6 !important;
+  border-radius: 18px !important;
+  padding: 20px 22px !important;
+  box-shadow: 0 10px 28px rgba(16, 42, 67, 0.07) !important;
+  color: #102A43 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 18px !important;
+  overflow: visible !important;
+}
+
+.dashboardIntro::before,
+.dashboardIntro::after {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+.dashboardIntro > div:first-child {
+  max-width: 760px !important;
+}
+
+.dashboardIntro .eyebrow {
+  color: #163A5F !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  opacity: 1 !important;
+  margin-bottom: 7px !important;
+}
+
+.dashboardIntro h3 {
+  color: #102A43 !important;
+  font-size: 25px !important;
+  font-weight: 850 !important;
+  line-height: 1.12 !important;
+  letter-spacing: -0.045em !important;
+  margin: 0 0 8px 0 !important;
+  text-shadow: none !important;
+}
+
+.dashboardIntro p {
+  color: #526577 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.55 !important;
+  margin: 0 !important;
+  text-shadow: none !important;
+}
+
+/* Right side stat chips */
+.summaryChips {
+  display: flex !important;
+  gap: 12px !important;
+  align-items: stretch !important;
+  flex-wrap: wrap !important;
+}
+
+.summaryChip {
+  background: #F8FAFC !important;
+  background-image: none !important;
+  border: 1px solid #D9E2EC !important;
+  border-radius: 16px !important;
+  box-shadow: none !important;
+  padding: 14px 16px !important;
+  min-width: 135px !important;
+  color: #102A43 !important;
+  text-align: left !important;
+}
+
+.summaryChip span {
+  color: #6B7280 !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.11em !important;
+  text-transform: uppercase !important;
+  opacity: 1 !important;
+}
+
+.summaryChip strong {
+  color: #163A5F !important;
+  font-size: 20px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.15 !important;
+}
+
+/* Dashboard hero also convert from website banner to software card */
+.v2Hero {
+  background: #FFFFFF !important;
+  background-image: none !important;
+  border: 1px solid #D9E2EC !important;
+  border-left: 5px solid #14B8A6 !important;
+  border-radius: 20px !important;
+  padding: 24px !important;
+  box-shadow: 0 10px 28px rgba(16, 42, 67, 0.07) !important;
+  color: #102A43 !important;
+}
+
+.v2Hero::before,
+.v2Hero::after {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+.v2Hero .eyebrow {
+  color: #163A5F !important;
+  opacity: 1 !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+}
+
+.v2Hero h3 {
+  color: #102A43 !important;
+  font-size: 30px !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.05em !important;
+  line-height: 1.08 !important;
+  text-shadow: none !important;
+}
+
+.v2Hero p {
+  color: #526577 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.6 !important;
+  text-shadow: none !important;
+}
+
+.v2SyncCard {
+  background: #F8FAFC !important;
+  background-image: none !important;
+  border: 1px solid #D9E2EC !important;
+  border-radius: 18px !important;
+  box-shadow: none !important;
+  color: #102A43 !important;
+}
+
+.v2SyncCard strong {
+  color: #163A5F !important;
+  font-weight: 900 !important;
+}
+
+.v2SyncCard p,
+.v2SyncCard small {
+  color: #526577 !important;
+  opacity: 1 !important;
+}
+
+/* Panels under headers */
+.panel,
+.card,
+.tableWrap,
+.formCard,
+.reportCard,
+.importCard,
+.settingsCard {
+  background: #FFFFFF !important;
+  border: 1px solid #D9E2EC !important;
+  border-radius: 18px !important;
+  box-shadow: 0 8px 24px rgba(16, 42, 67, 0.05) !important;
+}
+
+.panel h3,
+.card h3 {
+  color: #102A43 !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.03em !important;
+}
+
+.panel p,
+.card p,
+td {
+  color: #526577 !important;
+}
+
+/* Buttons softer enterprise */
+.primaryButton {
+  background: #14B8A6 !important;
+  color: #FFFFFF !important;
+  border: 1px solid #14B8A6 !important;
+  box-shadow: 0 10px 20px rgba(20, 184, 166, 0.20) !important;
+  border-radius: 12px !important;
+  font-weight: 850 !important;
+}
+
+.ghostButton {
+  background: #FFFFFF !important;
+  color: #163A5F !important;
+  border: 1px solid #D9E2EC !important;
+  box-shadow: none !important;
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.ghostButton:hover {
+  background: #F8FAFC !important;
+  border-color: #14B8A6 !important;
+  color: #0F766E !important;
+}
+
+/* More readable tables/forms */
+th {
+  background: #F8FAFC !important;
+  color: #375A7A !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.07em !important;
+}
+
+input,
+select,
+textarea {
+  background: #FFFFFF !important;
+  color: #102A43 !important;
+  border: 1px solid #D9E2EC !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  font-weight: 650 !important;
+}
+
+@media (max-width: 900px) {
+  .dashboardIntro {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  .summaryChips {
+    width: 100% !important;
+  }
+
+  .summaryChip {
+    flex: 1 !important;
+  }
+}
+
+/* === TMMD TRUE SOFTWARE UI PATCH END === */
+
+/* === TMMD COMPACT ENTERPRISE DENSITY PATCH START === */
+
+/* Compact enterprise density: remove oversized dashboard feel */
+html,
+body {
+  font-size: 14px !important;
+}
+
+body {
+  background: #F5F7FA !important;
+}
+
+/* Main content tighter */
+.mainArea {
+  padding: 16px 18px !important;
+  gap: 14px !important;
+}
+
+/* Sidebar slightly compact */
+.sidebar,
+.premiumSidebar {
+  width: 255px !important;
+  min-width: 255px !important;
+  padding: 14px !important;
+}
+
+.sidebar .brandCard,
+.sidebar [class*="brand"],
+.sidebarStatusStrip,
+.sidebarFooter,
+.premiumFooter {
+  border-radius: 14px !important;
+}
+
+.navButton {
+  min-height: 36px !important;
+  padding: 8px 10px !important;
+  font-size: 13px !important;
+  border-radius: 11px !important;
+}
+
+.navSectionLabel {
+  margin: 10px 0 5px !important;
+  font-size: 9.5px !important;
+}
+
+.sidebarFooter,
+.premiumFooter {
+  padding: 12px !important;
+}
+
+/* Top toolbar compact */
+.topbar {
+  padding: 13px 16px !important;
+  border-radius: 16px !important;
+  min-height: 72px !important;
+  box-shadow: 0 6px 18px rgba(16, 42, 67, 0.055) !important;
+}
+
+.topbar h2 {
+  font-size: 19px !important;
+  line-height: 1.1 !important;
+  margin: 2px 0 !important;
+  font-weight: 850 !important;
+}
+
+.topbar .eyebrow {
+  font-size: 10px !important;
+  letter-spacing: 0.09em !important;
+}
+
+.topActions {
+  gap: 8px !important;
+}
+
+.topActions button,
+.topbar button {
+  height: 36px !important;
+  padding: 0 14px !important;
+  font-size: 12px !important;
+  border-radius: 10px !important;
+}
+
+/* Main module headers smaller and professional */
+.dashboardIntro {
+  padding: 17px 20px !important;
+  border-radius: 16px !important;
+  border-left-width: 4px !important;
+  min-height: 132px !important;
+  box-shadow: 0 8px 22px rgba(16, 42, 67, 0.055) !important;
+}
+
+.dashboardIntro .eyebrow {
+  font-size: 10px !important;
+  margin-bottom: 6px !important;
+  letter-spacing: 0.11em !important;
+}
+
+.dashboardIntro h3 {
+  font-size: 21px !important;
+  line-height: 1.12 !important;
+  margin-bottom: 7px !important;
+}
+
+.dashboardIntro p {
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+  max-width: 680px !important;
+}
+
+/* Right stat chips compact */
+.summaryChips {
+  gap: 10px !important;
+}
+
+.summaryChip {
+  min-width: 112px !important;
+  padding: 12px 14px !important;
+  border-radius: 13px !important;
+}
+
+.summaryChip span {
+  font-size: 9.5px !important;
+}
+
+.summaryChip strong {
+  font-size: 18px !important;
+}
+
+/* Panels/cards compact */
+.panel,
+.card,
+.tableWrap,
+.formCard,
+.reportCard,
+.importCard,
+.settingsCard,
+.moduleCard,
+.statCard,
+.metricCard {
+  border-radius: 15px !important;
+  box-shadow: 0 6px 18px rgba(16, 42, 67, 0.045) !important;
+}
+
+.panelHeader,
+.panel-header,
+.cardHeader,
+.card-header {
+  padding: 14px 16px !important;
+  border-radius: 14px !important;
+}
+
+.panel h3,
+.card h3,
+.panelHeader h3,
+.cardHeader h3 {
+  font-size: 15px !important;
+  line-height: 1.2 !important;
+}
+
+.panel p,
+.card p {
+  font-size: 12.5px !important;
+  line-height: 1.45 !important;
+}
+
+/* Form compact */
+.formGrid,
+.settingsGrid,
+.reportGrid,
+.importGrid,
+.dashboardGrid,
+.kpiGrid {
+  gap: 12px !important;
+}
+
+label {
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  color: #375A7A !important;
+}
+
+input,
+select,
+textarea {
+  min-height: 38px !important;
+  height: 38px !important;
+  padding: 8px 11px !important;
+  font-size: 13px !important;
+  border-radius: 10px !important;
+  font-weight: 650 !important;
+}
+
+textarea {
+  height: auto !important;
+  min-height: 72px !important;
+}
+
+/* Tables compact */
+table {
+  font-size: 12.5px !important;
+}
+
+th {
+  font-size: 10px !important;
+  padding: 10px 11px !important;
+}
+
+td {
+  font-size: 12px !important;
+  padding: 11px !important;
+}
+
+/* Buttons compact */
+button,
+.primaryButton,
+.ghostButton,
+.secondaryButton {
+  min-height: 36px !important;
+  padding: 8px 13px !important;
+  font-size: 12px !important;
+  border-radius: 10px !important;
+}
+
+/* Dashboard hero compact too */
+.v2Hero {
+  padding: 20px !important;
+  border-radius: 17px !important;
+  border-left-width: 4px !important;
+}
+
+.v2Hero h3 {
+  font-size: 24px !important;
+  line-height: 1.1 !important;
+}
+
+.v2Hero p {
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
+.v2SyncCard {
+  padding: 16px !important;
+  border-radius: 14px !important;
+}
+
+/* KPI cards compact */
+.v2KpiGrid,
+.kpiGrid {
+  gap: 12px !important;
+}
+
+.v2KpiCard,
+.kpiCard,
+.metricCard,
+.statCard {
+  padding: 14px !important;
+  border-radius: 14px !important;
+}
+
+.v2KpiCard strong,
+.kpiCard strong,
+.metricCard strong,
+.statCard strong {
+  font-size: 22px !important;
+}
+
+/* Avoid huge page zoom feeling */
+.pageGrid {
+  gap: 14px !important;
+}
+
+.twoColumn {
+  gap: 14px !important;
+}
+
+/* Better professional weight */
+h1,
+h2,
+h3,
+h4,
+strong {
+  letter-spacing: -0.035em !important;
+}
+
+p,
+span,
+small,
+td {
+  letter-spacing: -0.01em !important;
+}
+
+/* === TMMD COMPACT ENTERPRISE DENSITY PATCH END === */
+
+/* === TMMD DASHBOARD SURPRISE POLISH START === */
+
+/* ===== Overall app polish ===== */
+body {
+  background: #F4F7FB !important;
+  color: #102A43 !important;
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif !important;
+}
+
+.mainArea {
+  background: #F4F7FB !important;
+  padding: 14px 16px !important;
+}
+
+/* ===== Sidebar refinement ===== */
+.sidebar,
+.premiumSidebar {
+  width: 248px !important;
+  min-width: 248px !important;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(20, 184, 166, 0.18), transparent 32%),
+    linear-gradient(180deg, #163A5F 0%, #102A43 55%, #0B1F33 100%) !important;
+  box-shadow: 18px 0 38px rgba(16, 42, 67, 0.18) !important;
+}
+
+.navButton {
+  min-height: 38px !important;
+  padding: 8px 10px !important;
+  font-size: 13px !important;
+  border-radius: 12px !important;
+}
+
+.navButton.active {
+  background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(240,247,255,0.92)) !important;
+  color: #163A5F !important;
+  border-color: rgba(255,255,255,0.65) !important;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.14) !important;
+}
+
+.navButton.active *,
+.navButton.active span,
+.navButton.active strong {
+  color: #163A5F !important;
+}
+
+.navButton.active .navActiveRail,
+.navActiveRail {
+  background: #14B8A6 !important;
+  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.14) !important;
+}
+
+.navSectionLabel {
+  font-size: 10px !important;
+  letter-spacing: 0.12em !important;
+  margin: 12px 0 6px !important;
+}
+
+/* ===== Top header ===== */
+.topbar {
+  background: #FFFFFF !important;
+  border: 1px solid #D9E2EC !important;
+  border-radius: 16px !important;
+  padding: 14px 18px !important;
+  box-shadow: 0 6px 20px rgba(16, 42, 67, 0.05) !important;
+}
+
+.topbar h2 {
+  color: #102A43 !important;
+  font-size: 18px !important;
+  font-weight: 850 !important;
+  line-height: 1.12 !important;
+  letter-spacing: -0.04em !important;
+  margin: 2px 0 !important;
+}
+
+.topbar .eyebrow {
+  color: #526577 !important;
+  font-size: 10px !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.10em !important;
+}
+
+.topActions {
+  gap: 8px !important;
+}
+
+.topbar button,
+.topActions button {
+  min-height: 36px !important;
+  height: 36px !important;
+  padding: 0 14px !important;
+  border-radius: 10px !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+}
+
+/* ===== Shared page/module header ===== */
+.dashboardIntro {
+  background: #FFFFFF !important;
+  border: 1px solid #D9E2EC !important;
+  border-left: 4px solid #14B8A6 !important;
+  border-radius: 16px !important;
+  padding: 16px 18px !important;
+  box-shadow: 0 8px 22px rgba(16, 42, 67, 0.05) !important;
+  gap: 16px !important;
+}
+
+.dashboardIntro .eyebrow {
+  color: #163A5F !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+}
+
+.dashboardIntro h3 {
+  color: #102A43 !important;
+  font-size: 21px !important;
+  line-height: 1.12 !important;
+  font-weight: 850 !important;
+  margin: 0 0 6px 0 !important;
+  letter-spacing: -0.045em !important;
+}
+
+.dashboardIntro p {
+  color: #526577 !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+  font-weight: 600 !important;
+}
+
+.summaryChips {
+  gap: 10px !important;
+}
+
+.summaryChip {
+  background: #F8FAFC !important;
+  border: 1px solid #D9E2EC !important;
+  border-radius: 14px !important;
+  padding: 12px 14px !important;
+  min-width: 116px !important;
+  box-shadow: none !important;
+}
+
+.summaryChip span {
+  color: #6B7280 !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+
+.summaryChip strong {
+  color: #163A5F !important;
+  font-size: 18px !important;
+  font-weight: 900 !important;
+  line-height: 1.1 !important;
+}
+
+/* ===== Dashboard hero ===== */
+.dashboardV2 {
+  gap: 14px !important;
+}
+
+.v2Hero {
+  background: #FFFFFF !important;
+  border: 1px solid #D9E2EC !important;
+  border-left: 4px solid #14B8A6 !important;
+  border-radius: 18px !important;
+  padding: 20px 22px !important;
+  box-shadow: 0 10px 26px rgba(16, 42, 67, 0.05) !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.8fr) minmax(240px, 0.82fr) !important;
+  gap: 18px !important;
+  align-items: start !important;
+}
+
+.v2Hero::before,
+.v2Hero::after {
+  display: none !important;
+}
+
+.v2Hero .eyebrow {
+  color: #163A5F !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+  opacity: 1 !important;
+  margin-bottom: 6px !important;
+}
+
+.v2Hero h3 {
+  color: #102A43 !important;
+  font-size: 20px !important;
+  font-weight: 850 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.045em !important;
+  margin-bottom: 10px !important;
+}
+
+.v2Hero p {
+  color: #526577 !important;
+  font-size: 13px !important;
+  line-height: 1.52 !important;
+  font-weight: 600 !important;
+}
+
+.v2HeroActions {
+  display: flex !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+  margin-top: 12px !important;
+}
+
+.v2HeroActions button {
+  min-height: 40px !important;
+  height: 40px !important;
+  padding: 0 16px !important;
+  border-radius: 12px !important;
+  font-size: 12.5px !important;
+}
+
+/* ===== Cloud sync side card ===== */
+.v2SyncCard {
+  background: linear-gradient(180deg, #F8FBFD 0%, #F4F8FC 100%) !important;
+  border: 1px solid #D9E2EC !important;
+  border-radius: 16px !important;
+  padding: 18px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8) !important;
+}
+
+.v2SyncTop {
+  margin-bottom: 10px !important;
+}
+
+.v2SyncTop small {
+  color: #375A7A !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.10em !important;
+}
+
+.v2LivePulse {
+  width: 10px !important;
+  height: 10px !important;
+  background: #22C55E !important;
+  border-radius: 999px !important;
+  box-shadow: 0 0 0 4px rgba(34,197,94,0.12) !important;
+}
+
+.v2SyncCard strong {
+  display: block !important;
+  color: #163A5F !important;
+  font-size: 20px !important;
+  font-weight: 900 !important;
+  margin-bottom: 8px !important;
+}
+
+.v2SyncCard p {
+  color: #526577 !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
+.v2SyncPills {
+  display: flex !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  margin-top: 12px !important;
+}
+
+.v2SyncPills span {
+  background: #EAF7F5 !important;
+  color: #0F766E !important;
+  border: 1px solid rgba(20,184,166,0.18) !important;
+  border-radius: 999px !important;
+  padding: 6px 10px !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  opacity: 1 !important;
+}
+
+/* ===== KPI cards ===== */
+.v2KpiGrid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+.v2KpiGrid > * {
+  background: #FFFFFF !important;
+  border: 1px solid #D9E2EC !important;
+  border-radius: 16px !important;
+  padding: 14px 16px !important;
+  box-shadow: 0 8px 20px rgba(16, 42, 67, 0.045) !important;
+  min-height: 116px !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.v2KpiGrid > *::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  height: 3px !important;
+  background: linear-gradient(90deg, #163A5F, #14B8A6) !important;
+  opacity: 0.95 !important;
+}
+
+.v2KpiGrid > * h3,
+.v2KpiGrid > * h4,
+.v2KpiGrid > * small,
+.v2KpiGrid > * span:first-child {
+  color: #6B7280 !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.v2KpiGrid > * strong,
+.v2KpiGrid > * .metricValue,
+.v2KpiGrid > * .count {
+  color: #102A43 !important;
+  font-size: 20px !important;
+  font-weight: 900 !important;
+  line-height: 1.12 !important;
+}
+
+.v2KpiGrid > * p {
+  color: #526577 !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+  margin-top: 6px !important;
+}
+
+/* ===== Generic cards/panels across dashboard ===== */
+.pageGrid,
+.twoColumn {
+  gap: 14px !important;
+}
+
+.panel,
+.card,
+.tableWrap,
+.formCard,
+.reportCard,
+.settingsCard,
+.importCard,
+.moduleCard,
+.statCard,
+.metricCard {
+  background: #FFFFFF !important;
+  border: 1px solid #D9E2EC !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 22px rgba(16, 42, 67, 0.045) !important;
+}
+
+.panelHeader,
+.cardHeader,
+.panel header,
+.card header {
+  background: #FFFFFF !important;
+  border-bottom: 1px solid #E9EEF5 !important;
+  border-radius: 16px 16px 0 0 !important;
+  padding: 14px 16px !important;
+}
+
+.panel h3,
+.card h3,
+.panelHeader h3,
+.cardHeader h3 {
+  color: #102A43 !important;
+  font-size: 15px !important;
+  font-weight: 850 !important;
+  line-height: 1.2 !important;
+}
+
+.panel p,
+.card p,
+td {
+  color: #526577 !important;
+  font-size: 12.5px !important;
+  line-height: 1.45 !important;
+}
+
+/* Ribbon-style small accent on inner section cards */
+.panelHeader,
+.cardHeader,
+.dashboardV2 .panel > :first-child,
+.dashboardV2 .card > :first-child {
+  position: relative !important;
+}
+
+.dashboardV2 .panel > :first-child::before,
+.dashboardV2 .card > :first-child::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 14px !important;
+  width: 4px !important;
+  height: 36px !important;
+  border-radius: 999px !important;
+  background: #14B8A6 !important;
+}
+
+/* ===== Forms and quick trace ===== */
+label {
+  color: #375A7A !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+input,
+select,
+textarea {
+  background: #FFFFFF !important;
+  color: #102A43 !important;
+  border: 1px solid #D9E2EC !important;
+  border-radius: 11px !important;
+  min-height: 38px !important;
+  height: 38px !important;
+  padding: 8px 11px !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  box-shadow: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none !important;
+  border-color: #14B8A6 !important;
+  box-shadow: 0 0 0 4px rgba(20,184,166,0.12) !important;
+}
+
+textarea {
+  height: auto !important;
+  min-height: 78px !important;
+}
+
+/* ===== Tables ===== */
+table {
+  font-size: 12.5px !important;
+}
+
+th {
+  background: #F8FAFC !important;
+  color: #375A7A !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  padding: 10px 11px !important;
+}
+
+td {
+  color: #526577 !important;
+  font-size: 12px !important;
+  padding: 11px !important;
+}
+
+/* ===== Buttons ===== */
+.primaryButton {
+  background: linear-gradient(135deg, #163A5F 0%, #244A76 100%) !important;
+  border: 1px solid #163A5F !important;
+  color: #FFFFFF !important;
+  border-radius: 11px !important;
+  box-shadow: 0 10px 20px rgba(22,58,95,0.16) !important;
+  font-weight: 850 !important;
+}
+
+.primaryButton:hover {
+  transform: translateY(-1px) !important;
+}
+
+.ghostButton,
+.secondaryButton {
+  background: #FFFFFF !important;
+  border: 1px solid #D9E2EC !important;
+  color: #163A5F !important;
+  border-radius: 11px !important;
+  font-weight: 800 !important;
+}
+
+.ghostButton:hover,
+.secondaryButton:hover {
+  background: #F8FAFC !important;
+  border-color: #14B8A6 !important;
+  color: #0F766E !important;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1200px) {
+  .v2KpiGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .v2Hero {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .dashboardIntro {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  .summaryChips {
+    width: 100% !important;
+  }
+
+  .summaryChip {
+    flex: 1 !important;
+  }
+
+  .v2KpiGrid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* === TMMD DASHBOARD SURPRISE POLISH END === */
+
+/* === TMMD FINAL EXECUTIVE MICRO POLISH START === */
+
+/* Final executive dashboard density */
+.mainArea {
+  padding: 12px 14px !important;
+}
+
+/* Reduce top whitespace and make dashboard feel more like real app */
+.dashboardV2 {
+  gap: 12px !important;
+}
+
+.v2Hero {
+  min-height: 155px !important;
+  padding: 18px 20px !important;
+  align-items: center !important;
+}
+
+.v2Hero h3 {
+  font-size: 19px !important;
+  max-width: 760px !important;
+  margin-bottom: 7px !important;
+}
+
+.v2Hero p {
+  max-width: 760px !important;
+  font-size: 12.5px !important;
+}
+
+.v2HeroActions {
+  margin-top: 10px !important;
+}
+
+.v2HeroActions button {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 14px !important;
+}
+
+/* Sync card more compact and professional */
+.v2SyncCard {
+  padding: 15px 16px !important;
+  min-height: 130px !important;
+}
+
+.v2SyncCard strong {
+  font-size: 18px !important;
+}
+
+.v2SyncCard p {
+  font-size: 12.5px !important;
+}
+
+/* KPI cards: cleaner executive tiles */
+.v2KpiGrid {
+  gap: 10px !important;
+}
+
+.v2KpiGrid > * {
+  min-height: 98px !important;
+  padding: 12px 14px !important;
+  border-radius: 14px !important;
+}
+
+.v2KpiGrid > * strong,
+.v2KpiGrid > * .metricValue,
+.v2KpiGrid > * .count {
+  font-size: 18px !important;
+}
+
+.v2KpiGrid > * p {
+  font-size: 11.5px !important;
+}
+
+/* Lower dashboard cards less oversized */
+.dashboardV2 .panel,
+.dashboardV2 .card,
+.dashboardV2 .moduleCard {
+  border-radius: 14px !important;
+  min-height: auto !important;
+}
+
+.dashboardV2 .panelHeader,
+.dashboardV2 .cardHeader,
+.dashboardV2 .panel > div:first-child,
+.dashboardV2 .card > div:first-child {
+  padding: 12px 14px !important;
+}
+
+.dashboardV2 .panel h3,
+.dashboardV2 .card h3,
+.dashboardV2 .panelHeader h3,
+.dashboardV2 .cardHeader h3 {
+  font-size: 14px !important;
+}
+
+/* Compact quick trace and action cards */
+.dashboardV2 input,
+.dashboardV2 select,
+.dashboardV2 button {
+  height: 35px !important;
+  min-height: 35px !important;
+}
+
+/* Sidebar final proportion */
+.sidebar,
+.premiumSidebar {
+  width: 242px !important;
+  min-width: 242px !important;
+}
+
+.navButton {
+  min-height: 35px !important;
+  font-size: 12.5px !important;
+}
+
+/* Better table/list density */
+td {
+  padding: 9px 10px !important;
+}
+
+th {
+  padding: 9px 10px !important;
+}
+
+/* Make page more premium, less zoomed */
+.pageGrid,
+.twoColumn {
+  gap: 12px !important;
+}
+
+/* Remove excessive empty vertical space inside dashboard cards */
+.dashboardV2 .panel,
+.dashboardV2 .card {
+  padding-bottom: 12px !important;
+}
+
+/* === TMMD FINAL EXECUTIVE MICRO POLISH END === */
