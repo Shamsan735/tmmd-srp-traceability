@@ -6735,3 +6735,139 @@ td:has(.siteMasterActionForceV2) {
 }
 
 /* === PM COMPLIANCE WOW CARD UI ONLY END === */
+
+
+/* === THREE DASHBOARD CARDS FINAL UI === */
+.dashboardV2 .v2MainGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  align-items: stretch !important;
+}
+
+.dashboardV2 .panel:has(.overallReadinessCard),
+.dashboardV2 .panel:has(.v2HealthWrap),
+.dashboardV2 .panel:has(.v2ActionCenter) {
+  min-height: 430px !important;
+  border-radius: 24px !important;
+  border: 1px solid #D9E2EC !important;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FBFCFE 100%) !important;
+  box-shadow: 0 18px 42px rgba(16, 42, 67, 0.075) !important;
+  overflow: hidden !important;
+}
+
+.overallReadinessCard {
+  display: grid !important;
+  gap: 18px !important;
+  padding: 18px !important;
+  min-height: 330px !important;
+  align-content: center !important;
+}
+
+.readinessRing {
+  width: 172px !important;
+  height: 172px !important;
+  margin: 0 auto !important;
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+  background:
+    radial-gradient(circle at center, #FFFFFF 0 54%, transparent 55%),
+    conic-gradient(#14B8A6 0 var(--readiness), #E5EAF1 var(--readiness) 100%) !important;
+  border: 1px solid #D9E2EC !important;
+  box-shadow: 0 20px 42px rgba(20, 184, 166, 0.16) !important;
+}
+
+.readinessRing > div {
+  width: 105px !important;
+  height: 105px !important;
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+  align-content: center !important;
+  background: #FFFFFF !important;
+  border: 1px solid #E5EAF1 !important;
+}
+
+.readinessRing strong {
+  color: #102A43 !important;
+  font-size: 32px !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  letter-spacing: -0.06em !important;
+}
+
+.readinessRing span {
+  margin-top: 5px !important;
+  color: #6B7280 !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.readinessBreakdown {
+  display: grid !important;
+  gap: 9px !important;
+}
+
+.readinessBreakdown > div {
+  display: grid !important;
+  grid-template-columns: 10px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 11px 12px !important;
+  border-radius: 14px !important;
+  background: #F8FAFC !important;
+  border: 1px solid #E5EAF1 !important;
+}
+
+.readinessBreakdown p {
+  margin: 0 !important;
+  color: #526577 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+}
+
+.readinessBreakdown strong {
+  color: #102A43 !important;
+  font-size: 16px !important;
+  font-weight: 950 !important;
+}
+
+.readinessDot {
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 999px !important;
+}
+
+.readinessDot.teal { background: #14B8A6 !important; }
+.readinessDot.navy { background: #163A5F !important; }
+.readinessDot.amber { background: #F59E0B !important; }
+
+.readinessNote {
+  padding: 12px 13px !important;
+  border-radius: 16px !important;
+  background: linear-gradient(135deg, #F0FDFA 0%, #FFFFFF 100%) !important;
+  border: 1px solid rgba(20, 184, 166, 0.20) !important;
+}
+
+.readinessNote span {
+  display: block !important;
+  color: #0F766E !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+}
+
+.readinessNote p {
+  margin: 5px 0 0 0 !important;
+  color: #526577 !important;
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+}
+
+@media (max-width: 1280px) {
+  .dashboardV2 .v2MainGrid {
+    grid-template-columns: 1fr !important;
+  }
+}

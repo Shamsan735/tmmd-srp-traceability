@@ -948,6 +948,20 @@ function App() {
     const noExpiry = assets.filter((asset) => getAssetCalibrationDays(asset, calibrationRecords) === null);
 
     const pmDashboard = buildPmDashboardDataFromChecklistRecords(assets, checklistRecords);
+
+  const calibrationTrackedItems = dashboardData.valid.length + dashboardData.warning.length + dashboardData.critical.length;
+  const calibrationHealthPercent = calibrationTrackedItems
+    ? Math.round((dashboardData.valid.length / calibrationTrackedItems) * 100)
+    : 0;
+
+  const pmTrackedItems = pmDashboard.valid.length + pmDashboard.dueSoon.length + pmDashboard.overdue.length;
+  const pmCompliancePercent = pmTrackedItems
+    ? Math.round((pmDashboard.valid.length / pmTrackedItems) * 100)
+    : 0;
+
+  const overallAssetReadinessScore = Math.round(
+    ((calibrationHealthPercent || 0) + (pmCompliancePercent || 0)) / 2
+  );
     const pmValid = pmDashboard.valid;
     const pmDueSoon = pmDashboard.dueSoon;
     const pmOverdue = pmDashboard.overdue;
@@ -1648,13 +1662,13 @@ function App() {
                   <div
                     className="v2HealthRing"
                     style={{
-                      "--validEnd": `${assets.length ? (dashboardData.valid.length / assets.length) * 100 : 0}%`,
-                      "--warningEnd": `${assets.length ? ((dashboardData.valid.length + dashboardData.warning.length) / assets.length) * 100 : 0}%`,
-                      "--criticalEnd": `${assets.length ? ((dashboardData.valid.length + dashboardData.warning.length + dashboardData.critical.length) / assets.length) * 100 : 0}%`,
+                      "--validEnd": `${calibrationTrackedItems ? (dashboardData.valid.length / calibrationTrackedItems) * 100 : 0}%`,
+                      "--warningEnd": `${calibrationTrackedItems ? ((dashboardData.valid.length + dashboardData.warning.length) / calibrationTrackedItems) * 100 : 0}%`,
+                      "--criticalEnd": `${calibrationTrackedItems ? ((dashboardData.valid.length + dashboardData.warning.length + dashboardData.critical.length) / calibrationTrackedItems) * 100 : 0}%`,
                     }}
                   >
                     <div>
-                      <strong>{assets.length ? Math.round((dashboardData.valid.length / assets.length) * 100) : 0}%</strong>
+                      <strong>{calibrationHealthPercent}%</strong>
                       <span>Healthy</span>
                     </div>
                   </div>
@@ -1686,6 +1700,40 @@ function App() {
                     <small>OVERDUE PM</small>
                     <strong>{dashboardData.pmOverdue?.length || 0}</strong>
                     <p>asset(s) past planned PM due date</p>
+                  </div>
+                </div>
+              </Panel>
+
+              <Panel title="Overall Asset Readiness" action="Calibration + PM">
+                <div className="overallReadinessCard">
+                  <div className="readinessRing" style={{"--readiness": `${overallAssetReadinessScore}%`}}>
+                    <div>
+                      <strong>{overallAssetReadinessScore}%</strong>
+                      <span>Ready</span>
+                    </div>
+                  </div>
+
+                  <div className="readinessBreakdown">
+                    <div>
+                      <span className="readinessDot teal" />
+                      <p>Calibration Health</p>
+                      <strong>{calibrationHealthPercent}%</strong>
+                    </div>
+                    <div>
+                      <span className="readinessDot navy" />
+                      <p>PM Compliance</p>
+                      <strong>{pmCompliancePercent}%</strong>
+                    </div>
+                    <div>
+                      <span className="readinessDot amber" />
+                      <p>Tracked Assets</p>
+                      <strong>{assets.length}</strong>
+                    </div>
+                  </div>
+
+                  <div className="readinessNote">
+                    <span>Executive score</span>
+                    <p>Combined view from calibration register and current PM checklist records.</p>
                   </div>
                 </div>
               </Panel>
