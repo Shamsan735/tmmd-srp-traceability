@@ -4519,6 +4519,58 @@ function AssetMasterPage({ assets, allAssets, sites, auth, query, setQuery, load
     }
   }
 
+  async function toggleAssetStatus(asset) {
+    const assetId = pickId(asset);
+    const currentStatus = String(asset?.status || "Active").toLowerCase();
+    const isInactive = currentStatus === "inactive" || currentStatus === "retired";
+    const nextStatus = isInactive ? "Active" : "Inactive";
+
+    const confirmed = window.confirm(
+      nextStatus === "Inactive"
+        ? "Deactivate this asset? History will remain safe."
+        : "Reactivate this asset?"
+    );
+
+    if (!confirmed) return;
+
+    setSavingAsset(true);
+    setAssetMessage("");
+
+    try {
+      const response = await fetch(`${API_BASE}/api/assets/${assetId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...createAuthHeaders(auth?.token),
+        },
+        body: JSON.stringify({
+          equipment_name: asset?.equipment_name || asset?.asset_name || asset?.name || "",
+          serial_number: asset?.serial_number || asset?.identification_number || asset?.equipment_no || asset?.tag_number || "",
+          category: asset?.category || "",
+          manufacturer: asset?.manufacturer || "",
+          model: asset?.model || "",
+          current_site_id: asset?.current_site_id || asset?.site_id || null,
+          status: nextStatus,
+          remarks: asset?.remarks || "",
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || result.error || "Unable to update asset status.");
+      }
+
+      setAssetMessage(`Asset ${nextStatus === "Inactive" ? "deactivated" : "reactivated"} successfully.`);
+      await loadData();
+    } catch (error) {
+      console.error(error);
+      setAssetMessage(error.message || "Unable to update asset status.");
+    } finally {
+      setSavingAsset(false);
+    }
+  }
+
   return (
     <section className="pageGrid">
       <div className="dashboardIntro">
@@ -4673,7 +4725,7 @@ function SiteMasterPage({ sites, auth, loadData }) {
     site_name: "",
     site_type: "Operational Site",
     city: "",
-    country: "Saudi Arabia",
+    country: "United Arab Emirates",
     is_remote: "0",
   };
 
@@ -4702,7 +4754,7 @@ function SiteMasterPage({ sites, auth, loadData }) {
       site_name: site?.site_name || "",
       site_type: site?.site_type || "Operational Site",
       city: site?.city || "",
-      country: site?.country || "Saudi Arabia",
+      country: site?.country || "United Arab Emirates",
       is_remote: isRemoteSite(site) ? "1" : "0",
     });
     setSiteMessage("Editing selected site.");
@@ -4787,6 +4839,55 @@ function SiteMasterPage({ sites, auth, loadData }) {
     } catch (error) {
       console.error(error);
       setSiteMessage(error.message || "Unable to update site status.");
+    }
+  }
+
+  async function toggleSiteStatus(site) {
+    const siteId = pickId(site);
+    const nextActive = isSiteActive(site) ? 0 : 1;
+
+    const confirmed = window.confirm(
+      nextActive === 0
+        ? "Deactivate this site? Assets and history will remain safe."
+        : "Reactivate this site?"
+    );
+
+    if (!confirmed) return;
+
+    setSavingSite(true);
+    setSiteMessage("");
+
+    try {
+      const response = await fetch(`${API_BASE}/api/sites/${siteId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...createAuthHeaders(auth?.token),
+        },
+        body: JSON.stringify({
+          site_code: site?.site_code || "",
+          site_name: site?.site_name || site?.name || "",
+          site_type: site?.site_type || "Operational Site",
+          city: site?.city || "",
+          country: site?.country || "United Arab Emirates",
+          is_remote: site?.is_remote ? 1 : 0,
+          is_active: nextActive,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || result.error || "Unable to update site status.");
+      }
+
+      setSiteMessage(`Site ${nextActive === 0 ? "deactivated" : "reactivated"} successfully.`);
+      await loadData();
+    } catch (error) {
+      console.error(error);
+      setSiteMessage(error.message || "Unable to update site status.");
+    } finally {
+      setSavingSite(false);
     }
   }
 
