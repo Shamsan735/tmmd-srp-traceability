@@ -3473,3 +3473,69 @@ tbody tr:hover {
     radial-gradient(circle at 84% 12%, rgba(201,166,107,.18), transparent 26%),
     linear-gradient(135deg, #203a60 0%, #31527d 52%, #e9f1ff 160%) !important;
 }
+
+/* Settings / User Access Control */
+.settingsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+.settingsGrid .importGuide {
+  border: 1px solid rgba(30, 64, 115, 0.14);
+  border-radius: 18px;
+  padding: 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(247,250,255,0.92));
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.settingsGrid .importGuide h4 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: #0f2745;
+}
+
+.settingsGrid .importGuide p {
+  margin: 0 0 14px;
+  color: #42526b;
+}
+
+.settingsChecks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.settingsCheck {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 1px solid rgba(30, 64, 115, 0.16);
+  border-radius: 12px;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1d3557;
+  cursor: pointer;
+}
+
+.settingsCheck input {
+  width: 16px;
+  height: 16px;
+  accent-color: #0f766e;
+  flex: 0 0 auto;
+}
+
+.settingsCheck:hover {
+  border-color: rgba(15, 118, 110, 0.45);
+  background: #f3fffc;
+}
+
+@media (max-width: 800px) {
+  .settingsChecks {
+    grid-template-columns: 1fr;
+  }
+}
+
