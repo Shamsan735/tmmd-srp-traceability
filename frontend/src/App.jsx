@@ -84,6 +84,40 @@ function daysUntilExpiry(asset) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function daysUntilDateValue(value) {
+  if (!value) return null;
+
+  const text = String(value).trim();
+  if (!text) return null;
+
+  const parsedDate = new Date(text);
+  if (Number.isNaN(parsedDate.getTime())) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  parsedDate.setHours(0, 0, 0, 0);
+
+  return Math.ceil((parsedDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function getAssetCalibrationDays(asset, calibrationRecords) {
+  const assetId = String(pickId(asset) ?? asset?.id ?? "").trim();
+
+  const relatedRecords = calibrationRecords
+    .filter((record) => String(record?.asset_id ?? "").trim() === assetId)
+    .map((record) => ({
+      ...record,
+      expiryDays: daysUntilDateValue(record?.expiry_date || record?.calibration_expiry_date || record?.due_date),
+    }))
+    .filter((record) => record.expiryDays !== null)
+    .sort((a, b) => a.expiryDays - b.expiryDays);
+
+  if (relatedRecords.length) return relatedRecords[0].expiryDays;
+
+  return daysUntilExpiry(asset);
+}
+
 function getCurrentSiteName(asset, sites) {
   if (asset?.current_site_name) return asset.current_site_name;
   if (asset?.site_name) return asset.site_name;
@@ -307,6 +341,7 @@ function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [assets, setAssets] = useState([]);
   const [sites, setSites] = useState([]);
+  const [calibrationRecords, setCalibrationRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [apiStatus, setApiStatus] = useState("Checking");
   const [auth, setAuth] = useState(getInitialAuth);
@@ -342,13 +377,14 @@ function App() {
     try {
       const authHeaders = createAuthHeaders(auth.token);
 
-      const [healthRes, assetsRes, sitesRes] = await Promise.all([
+      const [healthRes, assetsRes, sitesRes, calibrationRes] = await Promise.all([
         fetch(`${API_BASE}/api/health`),
         fetch(`${API_BASE}/api/assets`, { headers: authHeaders }),
         fetch(`${API_BASE}/api/sites`, { headers: authHeaders }),
+        fetch(`${API_BASE}/api/calibration-records`, { headers: authHeaders }),
       ]);
 
-      if (assetsRes.status === 401 || sitesRes.status === 401) {
+      if (assetsRes.status === 401 || sitesRes.status === 401 || calibrationRes.status === 401) {
         throw new Error("Unauthorized");
       }
 
@@ -356,9 +392,11 @@ function App() {
 
       const assetsJson = await assetsRes.json();
       const sitesJson = await sitesRes.json();
+      const calibrationJson = calibrationRes.ok ? await calibrationRes.json() : { calibration_records: [] };
 
       setAssets(normalizeList(assetsJson, "assets"));
       setSites(normalizeList(sitesJson, "sites"));
+      setCalibrationRecords(normalizeList(calibrationJson, "calibration_records"));
     } catch (error) {
       console.error(error);
       setApiStatus("Offline");
@@ -470,19 +508,21 @@ function App() {
 
   const dashboardData = useMemo(() => {
     const critical = assets.filter((asset) => {
-      const days = daysUntilExpiry(asset);
+      const days = getAssetCalibrationDays(asset, calibrationRecords);
       return days !== null && days <= 7;
     });
 
     const warning = assets.filter((asset) => {
-      const days = daysUntilExpiry(asset);
-      return days !== null && days > 7 && days <= 15;
+      const days = getAssetCalibrationDays(asset, calibrationRecords);
+      return days !== null && days > 7 && days <= 30;
     });
 
     const valid = assets.filter((asset) => {
-      const days = daysUntilExpiry(asset);
-      return days !== null && days > 15;
+      const days = getAssetCalibrationDays(asset, calibrationRecords);
+      return days !== null && days > 30;
     });
+
+    const noExpiry = assets.filter((asset) => getAssetCalibrationDays(asset, calibrationRecords) === null);
 
     const distributionMap = new Map();
     assets.forEach((asset) => {
@@ -495,11 +535,12 @@ function App() {
       .sort((a, b) => b.total - a.total);
 
     const expirySorted = [...assets]
-      .filter((asset) => daysUntilExpiry(asset) !== null)
-      .sort((a, b) => daysUntilExpiry(a) - daysUntilExpiry(b));
+      .map((asset) => ({ ...asset, dashboardExpiryDays: getAssetCalibrationDays(asset, calibrationRecords) }))
+      .filter((asset) => asset.dashboardExpiryDays !== null)
+      .sort((a, b) => a.dashboardExpiryDays - b.dashboardExpiryDays);
 
-    return { critical, warning, valid, distribution, expirySorted };
-  }, [assets, sites]);
+    return { critical, warning, valid, noExpiry, distribution, expirySorted };
+  }, [assets, sites, calibrationRecords]);
 
 
 
@@ -1155,7 +1196,7 @@ function App() {
               <Panel title="Priority Expiry Watchlist" action={`${dashboardData.expirySorted.slice(0, 6).length} items`}>
                 <div className="v2WatchList">
                   {dashboardData.expirySorted.slice(0, 6).map((asset) => {
-                    const days = daysUntilExpiry(asset);
+                    const days = asset.dashboardExpiryDays ?? getAssetCalibrationDays(asset, calibrationRecords);
                     const status = statusFromDays(days);
                     return (
                       <div className="v2WatchItem" key={pickId(asset)}>
