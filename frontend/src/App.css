@@ -6306,3 +6306,35 @@ th {
 }
 
 /* === TMMD HERO WOW POLISH END === */
+
+
+/* === SITE MASTER ACTION VISIBILITY FINAL === */
+.inlineActionRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.miniActionButton {
+  border: 1px solid #D9E2EC;
+  background: #FFFFFF;
+  color: #163A5F;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(16, 42, 67, 0.08);
+}
+
+.miniActionButton:hover {
+  border-color: #14B8A6;
+  color: #0F766E;
+}
+
+.miniActionButton.danger {
+  color: #B42318;
+  border-color: #FECACA;
+  background: #FFF7F7;
+}

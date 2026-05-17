@@ -376,25 +376,99 @@ function getPmRecordSortScore(record) {
 }
 
 function buildPmDashboardDataFromChecklistRecords(assets, checklistRecords) {
-  const rawRecords = Array.isArray(checklistRecords) ? checklistRecords : [];
+  const cleanRecords = getCleanPmRecords(checklistRecords);
 
-  const cleanRecords = rawRecords.filter((record) => {
-    const checklistType = String(record?.checklist_type || "").toLowerCase();
-    if (checklistType && checklistType !== "pm") return false;
-    return !isDashboardCalibrationGeneratedPmRecord(record);
-  });
+  function frequencyMonths(value) {
+    const text = String(value || "").toLowerCase().trim();
+    if (!text) return null;
+    if (text.includes("monthly")) return 1;
+    if (text.includes("quarter") || text.includes("3 month") || text.includes("3-month")) return 3;
+    if (text.includes("6 month") || text.includes("6-month")) return 6;
+    if (text.includes("annual") || text.includes("year") || text.includes("12 month")) return 12;
 
-  const latestRecordByAsset = new Map();
+    const numeric = Number(text.replace(/[^0-9.]/g, ""));
+    if (Number.isFinite(numeric) && numeric > 0 && numeric <= 36) return Math.round(numeric);
+    return null;
+  }
+
+  function addMonths(dateValue, months) {
+    if (!dateValue || !months) return "";
+    const normalized = normalizeDashboardDateValue(dateValue);
+    if (!normalized) return "";
+
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) return "";
+
+    date.setMonth(date.getMonth() + months);
+    return date.toISOString().slice(0, 10);
+  }
+
+  function dueDateFor(record) {
+    if (record?.next_due_date) return record.next_due_date;
+
+    const inspectionDate = record?.checklist_date || record?.inspection_date || record?.pm_date;
+    const months = frequencyMonths(record?.pm_frequency || record?.frequency);
+
+    return addMonths(inspectionDate, months);
+  }
+
+  function statusFor(record) {
+    const existing = String(record?.result || record?.status || "").toLowerCase();
+
+    if (existing.includes("overdue")) return "overdue";
+    if (existing.includes("due within")) return "dueSoon";
+
+    const dueDate = dueDateFor(record);
+    const days = daysUntilDateValue(dueDate);
+
+    if (days !== null && days < 0) return "overdue";
+    if (days !== null && days <= 10) return "dueSoon";
+    if (days !== null && days > 10) return "valid";
+
+    if (
+      existing.includes("valid") ||
+      existing.includes("completed") ||
+      existing.includes("pass") ||
+      existing.includes("ok") ||
+      existing.includes("imported")
+    ) {
+      return "valid";
+    }
+
+    return "missing";
+  }
+
+  function recordKey(record) {
+    return String(
+      record?.asset_id ||
+      record?.serial_number ||
+      record?.identification_number ||
+      record?.equipment_no ||
+      record?.tag_number ||
+      [record?.equipment_name, record?.checklist_name].filter(Boolean).join("::")
+    ).trim();
+  }
+
+  function score(record) {
+    const dateValue = dueDateFor(record) || record?.checklist_date || record?.inspection_date || record?.pm_date || record?.created_at;
+    const normalized = normalizeDashboardDateValue(dateValue);
+    const time = normalized ? new Date(normalized).getTime() : 0;
+    return Number.isFinite(time) ? time : Number(record?.id || 0);
+  }
+
+  const latestByAsset = new Map();
 
   cleanRecords.forEach((record) => {
-    const assetId = String(record?.asset_id || "").trim();
-    if (!assetId) return;
+    const key = recordKey(record);
+    if (!key) return;
 
-    const existing = latestRecordByAsset.get(assetId);
-    if (!existing || getPmRecordSortScore(record) >= getPmRecordSortScore(existing)) {
-      latestRecordByAsset.set(assetId, record);
+    const existing = latestByAsset.get(key);
+    if (!existing || score(record) >= score(existing)) {
+      latestByAsset.set(key, record);
     }
   });
+
+  const pmRecords = Array.from(latestByAsset.values());
 
   const result = {
     valid: [],
@@ -403,21 +477,20 @@ function buildPmDashboardDataFromChecklistRecords(assets, checklistRecords) {
     missing: [],
   };
 
+  pmRecords.forEach((record) => {
+    const status = statusFor(record);
+    if (status === "overdue") result.overdue.push(record);
+    else if (status === "dueSoon") result.dueSoon.push(record);
+    else if (status === "valid") result.valid.push(record);
+    else result.missing.push(record);
+  });
+
+  const assetIdsWithPm = new Set(pmRecords.map((record) => String(record?.asset_id || "").trim()).filter(Boolean));
   assets.forEach((asset) => {
     const assetId = String(pickId(asset) ?? asset?.id ?? "").trim();
-    const record = latestRecordByAsset.get(assetId);
-
-    if (!record) {
+    if (assetId && !assetIdsWithPm.has(assetId)) {
       result.missing.push(asset);
-      return;
     }
-
-    const status = getPmDashboardRecordStatus(record);
-
-    if (status === "overdue") result.overdue.push(asset);
-    else if (status === "dueSoon") result.dueSoon.push(asset);
-    else if (status === "valid") result.valid.push(asset);
-    else result.missing.push(asset);
   });
 
   return result;
@@ -5051,7 +5124,7 @@ function SiteMasterPage({ sites, auth, loadData }) {
                             Edit
                           </button>
                           <button className="ghostButton" type="button" onClick={() => toggleSite(site)}>
-                            {active ? "Deactivate" : "Activate"}
+                            {active ? "Deactivate" : "Reactivate"}
                           </button>
                         </div>
                       </td>
