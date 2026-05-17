@@ -61,7 +61,8 @@ function getRoleFromRequest(request: Request, env: Env) {
   if (token === env.AUTH_TOKEN) return "Admin";
 
   if (token.startsWith(env.AUTH_TOKEN + ":")) {
-    return normalizeAccessRole(token.slice(env.AUTH_TOKEN.length + 1));
+    const parts = token.slice(env.AUTH_TOKEN.length + 1).split(":");
+    return normalizeAccessRole(parts[parts.length - 1]);
   }
 
   return null;
@@ -105,6 +106,80 @@ function isRoleAccessAllowed(request: Request, env: Env) {
   return false;
 }
 
+
+function safeJsonParseArray(value: any, fallback: string[] = []) {
+  try {
+    const parsed = JSON.parse(String(value || "[]"));
+    return Array.isArray(parsed) ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function normalizeSettingsRole(role: any) {
+  const value = String(role || "").trim().toLowerCase();
+  if (value === "admin" || value === "administrator") return "Admin";
+  if (value === "store" || value === "store user") return "Store";
+  if (value === "operator") return "Operator";
+  if (value === "viewer" || value === "viewer/auditor") return "Viewer";
+  return "Viewer";
+}
+
+function defaultTabsForRole(role: any) {
+  const normalized = normalizeSettingsRole(role);
+  if (normalized === "Admin") return ["dashboard","movement","traceability","assets","sites","calibration","pm","repair","reports","import","settings"];
+  if (normalized === "Store") return ["dashboard","movement","traceability","sites","repair","reports"];
+  if (normalized === "Operator") return ["dashboard","movement","traceability","pm"];
+  return ["dashboard","traceability"];
+}
+
+function tokenUsername(token: string, env: Env) {
+  if (!env.AUTH_TOKEN || !token) return null;
+  if (token === env.AUTH_TOKEN) return "admin";
+  if (token.startsWith(env.AUTH_TOKEN + ":")) {
+    const parts = token.slice(env.AUTH_TOKEN.length + 1).split(":");
+    if (parts.length >= 2) return parts[0] || null;
+    return null;
+  }
+  return null;
+}
+
+function makeUserToken(env: Env, username: string, role: string) {
+  return `${env.AUTH_TOKEN}:${username}:${normalizeSettingsRole(role)}`;
+}
+
+async function getUserAccountByToken(request: Request, env: Env) {
+  const token = getBearerToken(request);
+  const username = tokenUsername(token, env);
+
+  if (!username) return null;
+
+  try {
+    const account: any = await env.DB.prepare(
+      "SELECT username, display_name, role, allowed_tabs, is_active FROM user_accounts WHERE username = ? LIMIT 1"
+    ).bind(username).first();
+
+    if (account?.username && Number(account.is_active) === 1) {
+      return {
+        username: account.username,
+        name: account.display_name,
+        role: normalizeSettingsRole(account.role),
+        allowed_tabs: safeJsonParseArray(account.allowed_tabs, defaultTabsForRole(account.role)),
+      };
+    }
+  } catch {}
+
+  if (username === "admin") {
+    return {
+      username: "admin",
+      name: "System Admin",
+      role: "Admin",
+      allowed_tabs: defaultTabsForRole("Admin"),
+    };
+  }
+
+  return null;
+}
 
 function normalizeImportText(value: any) {
   return String(value || "").trim();
@@ -265,11 +340,32 @@ export default {
         }, 400);
       }
 
+      try {
+        const account: any = await env.DB.prepare(
+          "SELECT username, password, display_name, role, allowed_tabs, is_active FROM user_accounts WHERE username = ? LIMIT 1"
+        ).bind(String(body.username || "").trim()).first();
+
+        if (account?.username && Number(account.is_active) === 1 && body.password === account.password) {
+          const role = normalizeSettingsRole(account.role);
+          return json({
+            success: true,
+            message: "Login successful",
+            token: makeUserToken(env, account.username, role),
+            user: {
+              username: account.username,
+              name: account.display_name,
+              role,
+              allowed_tabs: safeJsonParseArray(account.allowed_tabs, defaultTabsForRole(role)),
+            },
+          });
+        }
+      } catch {}
+
       const users = [
-        { username: env.AUTH_USERNAME, password: env.AUTH_PASSWORD, name: "System Admin", role: "Admin", token: env.AUTH_TOKEN },
-        { username: "store", password: "Store@123", name: "Store User", role: "Store", token: env.AUTH_TOKEN + ":Store" },
-        { username: "operator", password: "Operator@123", name: "Operator", role: "Operator", token: env.AUTH_TOKEN + ":Operator" },
-        { username: "viewer", password: "Viewer@123", name: "Viewer", role: "Viewer", token: env.AUTH_TOKEN + ":Viewer" },
+        { username: env.AUTH_USERNAME, password: env.AUTH_PASSWORD, name: "System Admin", role: "Admin", token: env.AUTH_TOKEN, allowed_tabs: defaultTabsForRole("Admin") },
+        { username: "store", password: "Store@123", name: "Store User", role: "Store", token: makeUserToken(env, "store", "Store"), allowed_tabs: defaultTabsForRole("Store") },
+        { username: "operator", password: "Operator@123", name: "Operator", role: "Operator", token: makeUserToken(env, "operator", "Operator"), allowed_tabs: defaultTabsForRole("Operator") },
+        { username: "viewer", password: "Viewer@123", name: "Viewer", role: "Viewer", token: makeUserToken(env, "viewer", "Viewer"), allowed_tabs: defaultTabsForRole("Viewer") },
       ];
 
       const user = users.find((item) => body.username === item.username && body.password === item.password);
@@ -280,8 +376,10 @@ export default {
           message: "Login successful",
           token: user.token,
           user: {
+            username: user.username,
             name: user.name,
             role: user.role,
+            allowed_tabs: user.allowed_tabs,
           },
         });
       }
@@ -306,6 +404,105 @@ export default {
       }, 403);
     }
 
+
+
+    if (path === "/api/settings/users" && request.method === "GET") {
+      const role = getRoleFromRequest(request, env);
+
+      if (role !== "Admin") {
+        return json({ success: false, message: "Only Admin can manage users." }, 403);
+      }
+
+      const { results } = await env.DB.prepare(
+        "SELECT id, username, display_name, role, allowed_tabs, is_active, created_at, updated_at FROM user_accounts ORDER BY id"
+      ).all();
+
+      return json({
+        success: true,
+        users: (results || []).map((user: any) => ({
+          ...user,
+          allowed_tabs: safeJsonParseArray(user.allowed_tabs, defaultTabsForRole(user.role)),
+        })),
+      });
+    }
+
+    if (path === "/api/settings/users" && request.method === "PUT") {
+      const role = getRoleFromRequest(request, env);
+
+      if (role !== "Admin") {
+        return json({ success: false, message: "Only Admin can manage users." }, 403);
+      }
+
+      const body: any = await readJson(request);
+      const users: any[] = Array.isArray(body?.users) ? body.users : [];
+
+      if (!users.length) {
+        return json({ success: false, message: "No users received." }, 400);
+      }
+
+      let updated = 0;
+
+      for (const item of users) {
+        const username = normalizeImportText(item.username);
+        const displayName = normalizeImportText(item.display_name || item.name);
+        const userRole = normalizeSettingsRole(item.role);
+        const allowedTabs = Array.isArray(item.allowed_tabs) && item.allowed_tabs.length ? item.allowed_tabs : defaultTabsForRole(userRole);
+        const isActive = item.is_active === false || Number(item.is_active) === 0 ? 0 : 1;
+        const password = normalizeImportText(item.password);
+
+        if (!username || !displayName || !userRole) continue;
+
+        const existing: any = await env.DB.prepare(
+          "SELECT id, password FROM user_accounts WHERE username = ? LIMIT 1"
+        ).bind(username).first();
+
+        if (existing?.id) {
+          await env.DB.prepare(
+            `UPDATE user_accounts
+             SET display_name = ?,
+                 role = ?,
+                 allowed_tabs = ?,
+                 is_active = ?,
+                 password = CASE WHEN ? <> '' THEN ? ELSE password END,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE username = ?`
+          ).bind(
+            displayName,
+            userRole,
+            JSON.stringify(allowedTabs),
+            isActive,
+            password,
+            password,
+            username
+          ).run();
+        } else {
+          await env.DB.prepare(
+            `INSERT INTO user_accounts (username, password, display_name, role, allowed_tabs, is_active)
+             VALUES (?, ?, ?, ?, ?, ?)`
+          ).bind(
+            username,
+            password || "Change@123",
+            displayName,
+            userRole,
+            JSON.stringify(allowedTabs),
+            isActive
+          ).run();
+        }
+
+        updated += 1;
+      }
+
+      await env.DB.prepare(
+        `INSERT INTO audit_logs (user_id, action, module, record_id, new_value)
+         VALUES (?, 'UPDATE_USER_SETTINGS', 'user_accounts', ?, ?)`
+      ).bind(null, null, JSON.stringify({ updated })).run();
+
+      return json({
+        success: true,
+        message: "User settings updated successfully.",
+        updated,
+      });
+    }
 
     if (path === "/api/import/excel" && request.method === "POST") {
       const role = getRoleFromRequest(request, env);

@@ -30,10 +30,11 @@ const navItems = [
   { id: "repair", label: "Asset Repair", icon: "R" },
   { id: "reports", label: "Reports", icon: "R" },
   { id: "import", label: "Excel Import", icon: "X" },
+  { id: "settings", label: "Settings", icon: "S" },
 ];
 
 const ROLE_TAB_ACCESS = {
-  Admin: ["dashboard", "movement", "traceability", "assets", "sites", "calibration", "pm", "repair", "reports", "import"],
+  Admin: ["dashboard", "movement", "traceability", "assets", "sites", "calibration", "pm", "repair", "reports", "import", "settings"],
   Store: ["dashboard", "movement", "traceability", "sites", "repair", "reports"],
   Operator: ["dashboard", "movement", "traceability", "pm"],
   Viewer: ["dashboard", "traceability"],
@@ -310,7 +311,7 @@ function App() {
   const [apiStatus, setApiStatus] = useState("Checking");
   const [auth, setAuth] = useState(getInitialAuth);
   const userRole = normalizeUserRole(auth?.user?.role);
-  const allowedTabIds = useMemo(() => getAllowedTabsForRole(userRole), [userRole]);
+  const allowedTabIds = useMemo(() => auth?.user?.allowed_tabs?.length ? auth.user.allowed_tabs : getAllowedTabsForRole(userRole), [auth?.user?.allowed_tabs, userRole]);
   const canAccessTab = (tabId) => allowedTabIds.includes(tabId);
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [loginError, setLoginError] = useState("");
@@ -956,7 +957,7 @@ function App() {
 
           <div className="navSectionLabel">Operations</div>
           {navItems
-            .filter((item) => ["movement", "assets", "sites", "reports", "import"].includes(item.id) && canAccessTab(item.id))
+            .filter((item) => ["movement", "assets", "sites", "reports", "import", "settings"].includes(item.id) && canAccessTab(item.id))
             .map((item) => (
               <button
                 key={item.id}
@@ -1422,6 +1423,10 @@ function App() {
           <ExcelImportCenter />
         )}
 
+        {activeTab === "settings" && (
+          <SettingsPage auth={auth} />
+        )}
+
         {activeTab === "reports" && (
           <section className="pageGrid">
             <div className="dashboardIntro">
@@ -1506,6 +1511,204 @@ function App() {
   );
 }
 
+
+
+const SETTINGS_MODULES = [
+  { id: "dashboard", label: "Dashboard" },
+  { id: "movement", label: "Movement Entry" },
+  { id: "traceability", label: "Traceability" },
+  { id: "assets", label: "Asset Master" },
+  { id: "sites", label: "Site Master" },
+  { id: "calibration", label: "Calibration" },
+  { id: "pm", label: "PM / Checklist" },
+  { id: "repair", label: "Asset Repair" },
+  { id: "reports", label: "Reports" },
+  { id: "import", label: "Excel Import" },
+  { id: "settings", label: "Settings" },
+];
+
+function SettingsPage({ auth }) {
+  const [users, setUsers] = useState([]);
+  const [settingsMessage, setSettingsMessage] = useState("");
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  async function loadUsers() {
+    setSettingsMessage("Loading user settings...");
+
+    try {
+      const response = await fetch(`${API_BASE}/api/settings/users`, {
+        headers: createAuthHeaders(auth?.token),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || result.error || "Unable to load users.");
+      }
+
+      setUsers((result.users || []).map((user) => ({
+        ...user,
+        password: "",
+        allowed_tabs: Array.isArray(user.allowed_tabs) ? user.allowed_tabs : [],
+        is_active: Number(user.is_active) === 1,
+      })));
+
+      setSettingsMessage("User settings loaded.");
+    } catch (error) {
+      console.error(error);
+      setSettingsMessage(error.message || "Unable to load user settings.");
+    }
+  }
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  function updateUser(index, key, value) {
+    setUsers((current) => current.map((user, itemIndex) => itemIndex === index ? { ...user, [key]: value } : user));
+  }
+
+  function toggleUserTab(index, tabId) {
+    setUsers((current) => current.map((user, itemIndex) => {
+      if (itemIndex !== index) return user;
+
+      const currentTabs = Array.isArray(user.allowed_tabs) ? user.allowed_tabs : [];
+      const exists = currentTabs.includes(tabId);
+      const nextTabs = exists ? currentTabs.filter((item) => item !== tabId) : [...currentTabs, tabId];
+
+      return { ...user, allowed_tabs: nextTabs };
+    }));
+  }
+
+  function applyRoleTemplate(index, role) {
+    const tabs = getAllowedTabsForRole(role);
+    updateUser(index, "role", role);
+    setUsers((current) => current.map((user, itemIndex) => itemIndex === index ? { ...user, role, allowed_tabs: tabs } : user));
+  }
+
+  async function saveUsers() {
+    setSavingSettings(true);
+    setSettingsMessage("Saving user settings...");
+
+    try {
+      const response = await fetch(`${API_BASE}/api/settings/users`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...createAuthHeaders(auth?.token),
+        },
+        body: JSON.stringify({
+          users,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || result.error || "Unable to save user settings.");
+      }
+
+      setSettingsMessage(result.message || "User settings updated successfully.");
+      await loadUsers();
+    } catch (error) {
+      console.error(error);
+      setSettingsMessage(error.message || "Unable to save user settings.");
+    } finally {
+      setSavingSettings(false);
+    }
+  }
+
+  return (
+    <section className="pageGrid">
+      <div className="dashboardIntro">
+        <div>
+          <p className="eyebrow">Admin Control</p>
+          <h3>User Settings & Access Control</h3>
+          <p>Change passwords, activate/deactivate users, assign roles, and select module access for each user.</p>
+        </div>
+        <div className="summaryChips">
+          <div className="summaryChip"><span>Users</span><strong>{users.length}</strong></div>
+          <div className="summaryChip"><span>Security</span><strong>Role Based</strong></div>
+        </div>
+      </div>
+
+      <Panel title="User Access Settings" action="Admin only">
+        <div className="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Display Name</th>
+                <th>Role</th>
+                <th>New Password</th>
+                <th>Active</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user, index) => (
+                <tr key={user.username}>
+                  <td><strong>{user.username}</strong></td>
+                  <td>
+                    <input value={user.display_name || ""} onChange={(e) => updateUser(index, "display_name", e.target.value)} />
+                  </td>
+                  <td>
+                    <select value={user.role} onChange={(e) => applyRoleTemplate(index, e.target.value)}>
+                      <option value="Admin">Admin</option>
+                      <option value="Store">Store</option>
+                      <option value="Operator">Operator</option>
+                      <option value="Viewer">Viewer</option>
+                    </select>
+                  </td>
+                  <td>
+                    <input type="text" value={user.password || ""} placeholder="Leave blank to keep current" onChange={(e) => updateUser(index, "password", e.target.value)} />
+                  </td>
+                  <td>
+                    <select value={user.is_active ? "1" : "0"} onChange={(e) => updateUser(index, "is_active", e.target.value === "1")}>
+                      <option value="1">Active</option>
+                      <option value="0">Inactive</option>
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+
+      <Panel title="Module Access Matrix" action="Select allowed modules">
+        <div className="settingsGrid">
+          {users.map((user, index) => (
+            <div className="importGuide" key={user.username}>
+              <h4>{user.display_name || user.username}</h4>
+              <p><strong>Role:</strong> {user.role}</p>
+              <div className="settingsChecks">
+                {SETTINGS_MODULES.map((module) => (
+                  <label key={module.id} className="settingsCheck">
+                    <input
+                      type="checkbox"
+                      checked={(user.allowed_tabs || []).includes(module.id)}
+                      onChange={() => toggleUserTab(index, module.id)}
+                    />
+                    {module.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Panel>
+
+      <div className="v2HeroActions">
+        <button className="primaryButton" type="button" disabled={savingSettings} onClick={saveUsers}>
+          {savingSettings ? "Saving..." : "Save User Settings"}
+        </button>
+        <button className="ghostButton" type="button" onClick={loadUsers}>Reload</button>
+      </div>
+
+      <div className="messageBox">{settingsMessage || "Update user access carefully before handover."}</div>
+    </section>
+  );
+}
 
 function ExcelImportCenter() {
   const [servicePreview, setServicePreview] = useState(null);
