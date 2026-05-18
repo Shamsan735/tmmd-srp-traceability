@@ -1106,7 +1106,7 @@ function App() {
     : 0;
 
   const readinessPmDashboard = buildPmDashboardDataFromChecklistRecords(assets, checklistRecords);
-  const pmTrackedItems = readinessPmDashboard.valid.length + readinessPmDashboard.dueSoon.length + readinessPmDashboard.overdue.length + (readinessPmDashboard.missing?.length || 0);
+  const pmTrackedItems = readinessPmDashboard.valid.length + readinessPmDashboard.dueSoon.length + readinessPmDashboard.overdue.length;
 
   const pmCompliancePercent = pmTrackedItems
     ? Math.round((readinessPmDashboard.valid.length / pmTrackedItems) * 100)
@@ -1706,14 +1706,7 @@ function App() {
                     <strong>{dashboardData.pmOverdue?.length || 0}</strong>
                     <p>asset(s) past planned PM due date</p>
                   </div>
-                
-                  <div className="v2ActionAlert review">
-                    <span>Review</span>
-                    <small>Needs Review</small>
-                    <strong>{pmDashboard.missing?.length || 0}</strong>
-                    <p>asset(s) pending PM classification or schedule details</p>
-                  </div>
-</div>
+                </div>
               </Panel>
 
               <Panel title="Overall Asset Readiness" action="Calibration + PM">
