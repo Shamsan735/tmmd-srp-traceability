@@ -728,19 +728,25 @@ function downloadCsv(filename, rows) {
   URL.revokeObjectURL(url);
 }
 
-function pmStatusFromDueDate(nextDueDate, pmRecord = null) {
-  let effectiveDueDate = nextDueDate;
+function getPmEffectiveDueDate(nextDueDate, pmRecord = null) {
+  if (nextDueDate) return nextDueDate;
 
-  if (!effectiveDueDate && pmRecord) {
-    const months = getDashboardPmFrequencyMonths(pmRecord?.pm_frequency || pmRecord?.frequency);
-    effectiveDueDate = addDashboardMonths(pmRecord?.checklist_date || pmRecord?.pm_date || pmRecord?.inspection_date, months);
+  if (!pmRecord) return "";
+
+  const months = getDashboardPmFrequencyMonths(pmRecord?.pm_frequency || pmRecord?.frequency);
+  return addDashboardMonths(pmRecord?.checklist_date || pmRecord?.pm_date || pmRecord?.inspection_date, months);
+}
+
+function pmStatusFromDueDate(nextDueDate, pmRecord = null) {
+  const effectiveDueDate = getPmEffectiveDueDate(nextDueDate, pmRecord);
+
+  if (!pmRecord && !effectiveDueDate) {
+    return { label: "No PM Record", className: "neutral", days: null };
   }
 
   if (!effectiveDueDate && pmRecord) {
     return { label: "PM Recorded - Schedule Not Set", className: "warning", days: null };
   }
-
-  if (!effectiveDueDate) return { label: "Not Applicable", className: "neutral", days: null };
 
   const today = new Date();
   const due = new Date(effectiveDueDate);
@@ -748,7 +754,7 @@ function pmStatusFromDueDate(nextDueDate, pmRecord = null) {
   if (Number.isNaN(due.getTime())) {
     return pmRecord
       ? { label: "PM Recorded - Schedule Not Set", className: "warning", days: null }
-      : { label: "Not Applicable", className: "neutral", days: null };
+      : { label: "No PM Record", className: "neutral", days: null };
   }
 
   today.setHours(0, 0, 0, 0);
@@ -1617,7 +1623,7 @@ function App() {
             <div className="v2Hero">
               <div>
                 <p className="eyebrow">Asset Control Tower</p>
-                <h3>Operations • Calibration Risk • PM Compliance</h3>
+                <h3>Operations â€¢ Calibration Risk â€¢ PM Compliance</h3>
                 <p>
                   Clean executive visibility for assets, calibration expiry, PM status,
                   movement control, and audit-ready traceability.
@@ -1977,14 +1983,19 @@ function App() {
                       <span>Calibration: {getAssetCalibrationDays(traceAsset, calibrationRecords) ?? "N/A"} days</span>
                       {(() => {
                         const latestPm = getLatestPmRecord(tracePmRecords);
+                        const effectivePmDueDate = getPmEffectiveDueDate(latestPm?.next_due_date, latestPm);
                         const pmStatus = pmStatusFromDueDate(latestPm?.next_due_date, latestPm);
+                        const lastPmLabel = latestPm?.checklist_date || "No PM Record";
+                        const nextPmLabel = effectivePmDueDate || (latestPm ? "Schedule Not Set" : "No PM Record");
+                        const pmFrequencyLabel = latestPm?.pm_frequency || "Schedule Not Set";
+                        const requiredChecklistLabel = latestPm?.checklist_name || (latestPm ? "Schedule Not Set" : "No PM Record");
                         return (
                           <>
                             <span>PM Status: {pmStatus.label}</span>
-                            <span>Last PM: {latestPm?.checklist_date || "Not Available"}</span>
-                            <span>Next PM Due: {latestPm?.next_due_date || "Not Applicable"}</span>
-                            <span>PM Frequency: {latestPm?.pm_frequency || "Not Applicable"}</span>
-                            <span>Required Checklist: {latestPm?.checklist_name || "Not Applicable"}</span>
+                            <span>Last PM: {lastPmLabel}</span>
+                            <span>Next PM Due: {nextPmLabel}</span>
+                            <span>PM Frequency: {pmFrequencyLabel}</span>
+                            <span>Required Checklist: {requiredChecklistLabel}</span>
                           </>
                         );
                       })()}
@@ -2959,7 +2970,7 @@ function LoginScreen({ loginForm, setLoginForm, loginError, loginLoading, onLogi
             </form>
 
             <div className="loginFooterNote">
-              Authorized personnel only • Secure operational access
+              Authorized personnel only â€¢ Secure operational access
             </div>
           </div>
         </section>
@@ -3026,35 +3037,35 @@ function calibrationStatusFromExpiry(expiryDate) {
 
 function PmChecklistPage({ assets, sites, auth }) {
   const checklistOptions = [
-    "F HSE 14 – Monthly Visual Inspection of Portable Fire Extinguishers",
-    "F HSE 16 – Weekly Vehicle Check List",
-    "F HSE 18 – Forklift Truck Operator Pre-Use Checks",
-    "F STR 04 – Equipment Damage and Repair Report",
-    "F STR 05 – Preventive Maintenance – Electrical Grinder, Blower, Drilling Machine",
-    "F STR 08 – Equipment Check List – Rig Site",
-    "F STR 16-A – Equipment Inspection – PM Checklist",
-    "F STR 16-B – Equipment Inspection – PM Checklist",
-    "F STR 16-C – Equipment Inspection – PM Checklist",
-    "F STR 17 – Generator Checklist",
-    "F STR 18 – Shot Blasting Machine Checklist",
-    "F STR 19 – Portable Air Compressor Daily Checklist",
-    "F STR 20 – List of Service-Related Equipment",
-    "F STR 21 – Monitoring of Shelf-Life Sensitive Items",
-    "F STR 22 – Portable Diesel or Petrol Generator Checklist",
-    "F STR 25 – High Pressure Water Jet Unit Checklist",
-    "F QMS 11 – Calibration Status of Inspection, Monitoring and Test Equipment",
-    "F RA 23 – Textile Item Maintenance Checklist",
-    "F RA 24 – Metal Items and Helmet Maintenance Checklist",
-    "F STR 26 – List of Critical Spares",
-    "F STR 27 – Equipment Usage History",
-    "F STR 29 – Preventive Maintenance, Inspection and Test Plan",
-    "F STR 30 – MSDS Assessment",
+    "F HSE 14 â€“ Monthly Visual Inspection of Portable Fire Extinguishers",
+    "F HSE 16 â€“ Weekly Vehicle Check List",
+    "F HSE 18 â€“ Forklift Truck Operator Pre-Use Checks",
+    "F STR 04 â€“ Equipment Damage and Repair Report",
+    "F STR 05 â€“ Preventive Maintenance â€“ Electrical Grinder, Blower, Drilling Machine",
+    "F STR 08 â€“ Equipment Check List â€“ Rig Site",
+    "F STR 16-A â€“ Equipment Inspection â€“ PM Checklist",
+    "F STR 16-B â€“ Equipment Inspection â€“ PM Checklist",
+    "F STR 16-C â€“ Equipment Inspection â€“ PM Checklist",
+    "F STR 17 â€“ Generator Checklist",
+    "F STR 18 â€“ Shot Blasting Machine Checklist",
+    "F STR 19 â€“ Portable Air Compressor Daily Checklist",
+    "F STR 20 â€“ List of Service-Related Equipment",
+    "F STR 21 â€“ Monitoring of Shelf-Life Sensitive Items",
+    "F STR 22 â€“ Portable Diesel or Petrol Generator Checklist",
+    "F STR 25 â€“ High Pressure Water Jet Unit Checklist",
+    "F QMS 11 â€“ Calibration Status of Inspection, Monitoring and Test Equipment",
+    "F RA 23 â€“ Textile Item Maintenance Checklist",
+    "F RA 24 â€“ Metal Items and Helmet Maintenance Checklist",
+    "F STR 26 â€“ List of Critical Spares",
+    "F STR 27 â€“ Equipment Usage History",
+    "F STR 29 â€“ Preventive Maintenance, Inspection and Test Plan",
+    "F STR 30 â€“ MSDS Assessment",
   ];
 
   const emptyForm = {
     asset_id: "",
     checklist_type: "PM",
-    checklist_name: "F STR 16-A – Equipment Inspection – PM Checklist",
+    checklist_name: "F STR 16-A â€“ Equipment Inspection â€“ PM Checklist",
     checklist_date: "",
     performed_by: "",
     pm_frequency: "Monthly",
@@ -3133,7 +3144,7 @@ function PmChecklistPage({ assets, sites, auth }) {
     setForm({
       asset_id: String(record.asset_id || ""),
       checklist_type: record.checklist_type || "PM",
-      checklist_name: record.checklist_name || "F STR 16-A – Equipment Inspection – PM Checklist",
+      checklist_name: record.checklist_name || "F STR 16-A â€“ Equipment Inspection â€“ PM Checklist",
       checklist_date: record.checklist_date || "",
       performed_by: record.performed_by || "",
       pm_frequency: record.pm_frequency || "Monthly",
@@ -3977,29 +3988,29 @@ function PmMaintenancePage({ assets, sites, auth }) {
             <label>
               Checklist Name / Form
               <select value={pmForm.checklist_name} onChange={(e) => updatePmForm("checklist_name", e.target.value)}>
-                <option value="F HSE 14 – Monthly Visual Inspection of Portable Fire Extinguishers">F HSE 14 – Monthly Visual Inspection of Portable Fire Extinguishers</option>
-                <option value="F HSE 16 – Weekly Vehicle Check List">F HSE 16 – Weekly Vehicle Check List</option>
-                <option value="F HSE 18 – Forklift Truck Operator Pre-Use Checks">F HSE 18 – Forklift Truck Operator Pre-Use Checks</option>
-                <option value="F STR 04 – Equipment Damage and Repair Report">F STR 04 – Equipment Damage and Repair Report</option>
-                <option value="F STR 05 – Preventive Maintenance – Electrical Grinder, Blower, Drilling Machine">F STR 05 – Preventive Maintenance – Electrical Grinder, Blower, Drilling Machine</option>
-                <option value="F STR 08 – Equipment Check List – Rig Site">F STR 08 – Equipment Check List – Rig Site</option>
-                <option value="F STR 16-A – Equipment Inspection – PM Checklist">F STR 16-A – Equipment Inspection – PM Checklist</option>
-                <option value="F STR 16-B – Equipment Inspection – PM Checklist">F STR 16-B – Equipment Inspection – PM Checklist</option>
-                <option value="F STR 16-C – Equipment Inspection – PM Checklist">F STR 16-C – Equipment Inspection – PM Checklist</option>
-                <option value="F STR 17 – Generator Checklist">F STR 17 – Generator Checklist</option>
-                <option value="F STR 18 – Shot Blasting Machine Checklist">F STR 18 – Shot Blasting Machine Checklist</option>
-                <option value="F STR 19 – Portable Air Compressor Daily Checklist">F STR 19 – Portable Air Compressor Daily Checklist</option>
-                <option value="F STR 20 – List of Service-Related Equipment">F STR 20 – List of Service-Related Equipment</option>
-                <option value="F STR 21 – Monitoring of Shelf-Life Sensitive Items">F STR 21 – Monitoring of Shelf-Life Sensitive Items</option>
-                <option value="F STR 22 – Portable Diesel or Petrol Generator Checklist">F STR 22 – Portable Diesel or Petrol Generator Checklist</option>
-                <option value="F STR 25 – High Pressure Water Jet Unit Checklist">F STR 25 – High Pressure Water Jet Unit Checklist</option>
-                <option value="F QMS 11 – Calibration Status of Inspection, Monitoring and Test Equipment">F QMS 11 – Calibration Status of Inspection, Monitoring and Test Equipment</option>
-                <option value="F RA 23 – Textile Item Maintenance Checklist">F RA 23 – Textile Item Maintenance Checklist</option>
-                <option value="F RA 24 – Metal Items and Helmet Maintenance Checklist">F RA 24 – Metal Items and Helmet Maintenance Checklist</option>
-                <option value="F STR 26 – List of Critical Spares">F STR 26 – List of Critical Spares</option>
-                <option value="F STR 27 – Equipment Usage History">F STR 27 – Equipment Usage History</option>
-                <option value="F STR 29 – Preventive Maintenance, Inspection and Test Plan">F STR 29 – Preventive Maintenance, Inspection and Test Plan</option>
-                <option value="F STR 30 – MSDS Assessment">F STR 30 – MSDS Assessment</option>
+                <option value="F HSE 14 â€“ Monthly Visual Inspection of Portable Fire Extinguishers">F HSE 14 â€“ Monthly Visual Inspection of Portable Fire Extinguishers</option>
+                <option value="F HSE 16 â€“ Weekly Vehicle Check List">F HSE 16 â€“ Weekly Vehicle Check List</option>
+                <option value="F HSE 18 â€“ Forklift Truck Operator Pre-Use Checks">F HSE 18 â€“ Forklift Truck Operator Pre-Use Checks</option>
+                <option value="F STR 04 â€“ Equipment Damage and Repair Report">F STR 04 â€“ Equipment Damage and Repair Report</option>
+                <option value="F STR 05 â€“ Preventive Maintenance â€“ Electrical Grinder, Blower, Drilling Machine">F STR 05 â€“ Preventive Maintenance â€“ Electrical Grinder, Blower, Drilling Machine</option>
+                <option value="F STR 08 â€“ Equipment Check List â€“ Rig Site">F STR 08 â€“ Equipment Check List â€“ Rig Site</option>
+                <option value="F STR 16-A â€“ Equipment Inspection â€“ PM Checklist">F STR 16-A â€“ Equipment Inspection â€“ PM Checklist</option>
+                <option value="F STR 16-B â€“ Equipment Inspection â€“ PM Checklist">F STR 16-B â€“ Equipment Inspection â€“ PM Checklist</option>
+                <option value="F STR 16-C â€“ Equipment Inspection â€“ PM Checklist">F STR 16-C â€“ Equipment Inspection â€“ PM Checklist</option>
+                <option value="F STR 17 â€“ Generator Checklist">F STR 17 â€“ Generator Checklist</option>
+                <option value="F STR 18 â€“ Shot Blasting Machine Checklist">F STR 18 â€“ Shot Blasting Machine Checklist</option>
+                <option value="F STR 19 â€“ Portable Air Compressor Daily Checklist">F STR 19 â€“ Portable Air Compressor Daily Checklist</option>
+                <option value="F STR 20 â€“ List of Service-Related Equipment">F STR 20 â€“ List of Service-Related Equipment</option>
+                <option value="F STR 21 â€“ Monitoring of Shelf-Life Sensitive Items">F STR 21 â€“ Monitoring of Shelf-Life Sensitive Items</option>
+                <option value="F STR 22 â€“ Portable Diesel or Petrol Generator Checklist">F STR 22 â€“ Portable Diesel or Petrol Generator Checklist</option>
+                <option value="F STR 25 â€“ High Pressure Water Jet Unit Checklist">F STR 25 â€“ High Pressure Water Jet Unit Checklist</option>
+                <option value="F QMS 11 â€“ Calibration Status of Inspection, Monitoring and Test Equipment">F QMS 11 â€“ Calibration Status of Inspection, Monitoring and Test Equipment</option>
+                <option value="F RA 23 â€“ Textile Item Maintenance Checklist">F RA 23 â€“ Textile Item Maintenance Checklist</option>
+                <option value="F RA 24 â€“ Metal Items and Helmet Maintenance Checklist">F RA 24 â€“ Metal Items and Helmet Maintenance Checklist</option>
+                <option value="F STR 26 â€“ List of Critical Spares">F STR 26 â€“ List of Critical Spares</option>
+                <option value="F STR 27 â€“ Equipment Usage History">F STR 27 â€“ Equipment Usage History</option>
+                <option value="F STR 29 â€“ Preventive Maintenance, Inspection and Test Plan">F STR 29 â€“ Preventive Maintenance, Inspection and Test Plan</option>
+                <option value="F STR 30 â€“ MSDS Assessment">F STR 30 â€“ MSDS Assessment</option>
               </select>
             </label>
 
