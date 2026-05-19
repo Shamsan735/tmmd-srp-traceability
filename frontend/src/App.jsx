@@ -1455,13 +1455,7 @@ function App() {
       }
 
       setTraceAsset(asset);
-
-      if (!canManageAssets) {
-      setAssetMessage("Only Admin can deactivate or reactivate asset records.");
-      return;
-    }
-
-    const assetId = pickId(asset);
+      const assetId = pickId(asset);
       const historyRes = await fetch(`${API_BASE}/api/assets/${assetId}/history`, {
         headers: authHeaders,
       });
@@ -1967,7 +1961,7 @@ function App() {
                     <p>{getAssetSerial(traceAsset)}</p>
                     <div className="profileMeta">
                       <span>Current Location: {getCurrentSiteName(traceAsset, sites)}</span>
-                      <span>Calibration: {daysUntilExpiry(traceAsset) ?? "N/A"} days</span>
+                      <span>Calibration: {getAssetCalibrationDays(traceAsset, calibrationRecords) ?? "N/A"} days</span>
                       {(() => {
                         const latestPm = getLatestPmRecord(tracePmRecords);
                         const pmStatus = pmStatusFromDueDate(latestPm?.next_due_date);
@@ -5281,6 +5275,7 @@ function PlaceholderPage({ title, subtitle, cards }) {
 }
 
 export default App;
+
 
 
 
