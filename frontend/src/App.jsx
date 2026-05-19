@@ -55,6 +55,10 @@ function getAllowedTabsForRole(role) {
   return ROLE_TAB_ACCESS[normalizeUserRole(role)] || ROLE_TAB_ACCESS.Viewer;
 }
 
+function canUseControlActions(role) {
+  return ["Admin", "Store", "Operator"].includes(normalizeUserRole(role));
+}
+
 function normalizeList(payload, key) {
   if (Array.isArray(payload)) return payload;
   if (payload?.[key] && Array.isArray(payload[key])) return payload[key];
@@ -1595,7 +1599,9 @@ function App() {
           <div className="topActions">
             <button className="ghostButton" onClick={loadData}>Refresh Data</button>
             <button className="ghostButton" onClick={handleLogout}>Logout</button>
-            <button className="primaryButton" onClick={() => setActiveTab("movement")}>New Movement</button>
+            {canUseControlActions(userRole) && (
+              <button className="primaryButton" onClick={() => setActiveTab("movement")}>New Movement</button>
+            )}
           </div>
         </header>
 
@@ -5273,6 +5279,7 @@ function PlaceholderPage({ title, subtitle, cards }) {
 }
 
 export default App;
+
 
 
 
