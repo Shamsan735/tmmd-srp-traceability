@@ -1617,7 +1617,9 @@ function App() {
                 </p>
 
                 <div className="v2HeroActions">
-                  <button className="primaryButton" onClick={() => setActiveTab("movement")}>Register Movement</button>
+                  {canUseControlActions(userRole) && (
+                    <button className="primaryButton" onClick={() => setActiveTab("movement")}>Register Movement</button>
+                  )}
                   <button className="ghostButton" onClick={() => setActiveTab("traceability")}>Trace Asset</button>
                   <button className="ghostButton" onClick={() => setActiveTab("reports")}>Export Reports</button>
                 </div>
@@ -5279,6 +5281,7 @@ function PlaceholderPage({ title, subtitle, cards }) {
 }
 
 export default App;
+
 
 
 
