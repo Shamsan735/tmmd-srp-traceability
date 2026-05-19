@@ -83,21 +83,24 @@ function isRoleAccessAllowed(request: Request, env: Env) {
   const isSites = path === "/api/sites" || /^\/api\/sites\/\d+$/.test(path);
   const isMovements = path === "/api/movements";
   const isPm = path === "/api/checklist-records" || /^\/api\/checklist-records\/\d+$/.test(path);
+  const isCalibration = path === "/api/calibration-records" || /^\/api\/calibration-records\/\d+$/.test(path);
   const isRepair = path === "/api/asset-repairs" || /^\/api\/asset-repairs\/\d+$/.test(path);
 
   if (role === "Viewer") {
-    return isRead && (isAssetList || isAssetSearch || isAssetHistory || path === "/api/sites" || isPm);
+    return isRead && (isAssetList || isAssetSearch || isAssetHistory || path === "/api/sites" || isPm || isCalibration);
   }
 
   if (role === "Operator") {
-    if (isRead && (isAssetList || isAssetSearch || isAssetHistory || path === "/api/sites" || isPm)) return true;
+    if (isRead && (isAssetList || isAssetSearch || isAssetHistory || path === "/api/sites" || isPm || isCalibration)) return true;
+    if ((method === "POST" || method === "PUT") && isCalibration) return true;
     if (method === "POST" && isMovements) return true;
     if ((method === "POST" || method === "PUT") && isPm) return true;
     return false;
   }
 
   if (role === "Store") {
-    if (isRead && (isAssetList || isAssetSearch || isAssetHistory || path === "/api/sites" || isPm || isRepair || isMovements)) return true;
+    if (isRead && (isAssetList || isAssetSearch || isAssetHistory || path === "/api/sites" || isPm || isCalibration || isRepair || isMovements)) return true;
+    if ((method === "POST" || method === "PUT") && isCalibration) return true;
     if (method === "POST" && isMovements) return true;
     if ((method === "POST" || method === "PUT") && isRepair) return true;
     return false;
@@ -128,9 +131,9 @@ function normalizeSettingsRole(role: any) {
 function defaultTabsForRole(role: any) {
   const normalized = normalizeSettingsRole(role);
   if (normalized === "Admin") return ["dashboard","movement","traceability","assets","sites","calibration","pm","repair","reports","import","settings"];
-  if (normalized === "Store") return ["dashboard","movement","traceability","sites","repair","reports"];
-  if (normalized === "Operator") return ["dashboard","movement","traceability","pm"];
-  return ["dashboard","traceability"];
+  if (normalized === "Store") return ["dashboard","movement","traceability","sites","calibration","repair","reports"];
+  if (normalized === "Operator") return ["dashboard","movement","traceability","calibration","pm"];
+  return ["dashboard","traceability","calibration"];
 }
 
 function tokenUsername(token: string, env: Env) {

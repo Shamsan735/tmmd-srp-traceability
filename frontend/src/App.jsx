@@ -35,9 +35,9 @@ const navItems = [
 
 const ROLE_TAB_ACCESS = {
   Admin: ["dashboard", "movement", "traceability", "assets", "sites", "calibration", "pm", "repair", "reports", "import", "settings"],
-  Store: ["dashboard", "movement", "traceability", "sites", "repair", "reports"],
-  Operator: ["dashboard", "movement", "traceability", "pm"],
-  Viewer: ["dashboard", "traceability"],
+  Store: ["dashboard", "movement", "traceability", "sites", "calibration", "repair", "reports"],
+  Operator: ["dashboard", "movement", "traceability", "calibration", "pm"],
+  Viewer: ["dashboard", "traceability", "calibration"],
 };
 
 function normalizeUserRole(role) {
