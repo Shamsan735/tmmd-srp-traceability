@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx-js-style";
 import "./App.css";
 
@@ -728,14 +728,27 @@ function downloadCsv(filename, rows) {
   URL.revokeObjectURL(url);
 }
 
-function pmStatusFromDueDate(nextDueDate) {
-  if (!nextDueDate) return { label: "Not Applicable", className: "neutral", days: null };
+function pmStatusFromDueDate(nextDueDate, pmRecord = null) {
+  let effectiveDueDate = nextDueDate;
+
+  if (!effectiveDueDate && pmRecord) {
+    const months = getDashboardPmFrequencyMonths(pmRecord?.pm_frequency || pmRecord?.frequency);
+    effectiveDueDate = addDashboardMonths(pmRecord?.checklist_date || pmRecord?.pm_date || pmRecord?.inspection_date, months);
+  }
+
+  if (!effectiveDueDate && pmRecord) {
+    return { label: "PM Recorded - Schedule Not Set", className: "warning", days: null };
+  }
+
+  if (!effectiveDueDate) return { label: "Not Applicable", className: "neutral", days: null };
 
   const today = new Date();
-  const due = new Date(nextDueDate);
+  const due = new Date(effectiveDueDate);
 
   if (Number.isNaN(due.getTime())) {
-    return { label: "Not Applicable", className: "neutral", days: null };
+    return pmRecord
+      ? { label: "PM Recorded - Schedule Not Set", className: "warning", days: null }
+      : { label: "Not Applicable", className: "neutral", days: null };
   }
 
   today.setHours(0, 0, 0, 0);
@@ -1964,7 +1977,7 @@ function App() {
                       <span>Calibration: {getAssetCalibrationDays(traceAsset, calibrationRecords) ?? "N/A"} days</span>
                       {(() => {
                         const latestPm = getLatestPmRecord(tracePmRecords);
-                        const pmStatus = pmStatusFromDueDate(latestPm?.next_due_date);
+                        const pmStatus = pmStatusFromDueDate(latestPm?.next_due_date, latestPm);
                         return (
                           <>
                             <span>PM Status: {pmStatus.label}</span>
@@ -1988,7 +2001,7 @@ function App() {
                     <div className="timelineItem" key={item.id || index}>
                       <span className="timelineDot" />
                       <div>
-                        <strong>{item.from_site_name || item.from_site || item.from_location || "Previous Site"} → {item.to_site_name || item.to_site || item.to_location || "New Site"}</strong>
+                        <strong>{item.from_site_name || item.from_site || item.from_location || "Previous Site"} ? {item.to_site_name || item.to_site || item.to_location || "New Site"}</strong>
                         <p>{formatUaeDateTime(item.movement_datetime || item.movement_date || item.created_at) || "Date not available"}</p>
                         <small>{item.remarks || item.notes || item.stayed_duration || (item.stayed_days_at_to_site ? `${item.stayed_days_at_to_site} day(s) at site` : "Movement recorded in audit trail")}</small>
                       </div>
@@ -5264,7 +5277,7 @@ function PlaceholderPage({ title, subtitle, cards }) {
       <div className="placeholderGrid">
         {cards.map((card) => (
           <div className="placeholderCard" key={card}>
-            <span>◇</span>
+            <span>?</span>
             <strong>{card}</strong>
             <p>Structured module panel ready for backend expansion.</p>
           </div>
@@ -5275,6 +5288,7 @@ function PlaceholderPage({ title, subtitle, cards }) {
 }
 
 export default App;
+
 
 
 
